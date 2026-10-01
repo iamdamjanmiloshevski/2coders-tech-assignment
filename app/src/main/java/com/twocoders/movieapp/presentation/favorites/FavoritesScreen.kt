@@ -60,7 +60,8 @@ fun FavoritesScreen(
                     val result = snackbarHostState.showSnackbar(
                         message = removedMessage.format(event.favorite.media.title),
                         actionLabel = undoLabel,
-                        duration = SnackbarDuration.Short,
+                        // Long (about 10 s), because an Undo action needs time to notice and reach.
+                        duration = SnackbarDuration.Long,
                     )
                     if (result == SnackbarResult.ActionPerformed) viewModel.undoRemove(event.favorite)
                 }

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.animation.core.animateDpAsState
@@ -36,6 +36,9 @@ import com.twocoders.movieapp.presentation.ui.theme.MovieAppTheme
 
 private val FloatingElevation = 16.dp
 private val PressedElevation = 4.dp
+
+/** Space kept free at the end of the title for the heart button. */
+private val HeartClearance = 36.dp
 
 /**
  * One floating media card: the poster, then the title, a meta line (rating, year) and a short overview.
@@ -82,48 +85,52 @@ fun MediaListItem(
         ),
         border = if (isDark) BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.5f)) else null,
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            PosterImage(
-                url = media.posterUrl,
-                fallbackIcon = media.type.iconRes(),
-                // A smaller radius than the card's, so the corners stay concentric inside the 12dp padding.
-                shape = MaterialTheme.shapes.small,
-                modifier = Modifier.size(width = 88.dp, height = 132.dp),
-            )
-            Column(
-                modifier = Modifier.padding(vertical = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+        Box {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Row(verticalAlignment = Alignment.Top) {
+                PosterImage(
+                    url = media.posterUrl,
+                    fallbackIcon = media.type.iconRes(),
+                    // A smaller radius than the card's, so the corners stay concentric inside the 12dp padding.
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.size(width = 88.dp, height = 132.dp),
+                )
+                Column(
+                    modifier = Modifier.padding(vertical = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     Text(
                         text = media.title,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                        // Leaves room for the heart, which sits over the card's top-right corner.
+                        modifier = if (onToggleFavorite != null) Modifier.padding(end = HeartClearance) else Modifier,
                     )
-                    if (onToggleFavorite != null) {
-                        FavoriteButton(
-                            isFavorite = isFavorite,
-                            onToggle = onToggleFavorite,
-                            // Pulled into the card's padding, so the 48dp touch target doesn't push the title down.
-                            modifier = Modifier.offset(x = 8.dp, y = (-10).dp),
+                    MetaLine(media)
+                    if (media.overview.isNotBlank()) {
+                        Text(
+                            text = media.overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
-                MetaLine(media)
-                if (media.overview.isNotBlank()) {
-                    Text(
-                        text = media.overview,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+            }
+            // Layered over the card instead of placed in the text column, so its 48dp touch target
+            // doesn't add height to the title row.
+            if (onToggleFavorite != null) {
+                FavoriteButton(
+                    isFavorite = isFavorite,
+                    onToggle = onToggleFavorite,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(2.dp),
+                )
             }
         }
     }
