@@ -158,7 +158,7 @@ TMDB sometimes sends `null` where a list is expected. `TmdbJson` sets `coerceInp
 Jetpack Compose only, with Material 3. There was no design to follow, so the goal was simple and calm: let the posters carry the colour, and keep the UI out of the way.
 
 - **Brand theme.** A warm amber accent on neutral surfaces, with full light and dark colour schemes. Dynamic colour is turned off on purpose, so every reviewer sees the same app. The window background matches the Compose background, so there's no colour flash at launch.
-- **Movies.** Each row shows a poster, title, ★ rating, year and a 3-line overview. The top bar hides while you scroll down and comes back on any scroll up.
+- **Movies.** Each title is a card with a poster, title, ★ rating, year and a 3-line overview. Cards have a soft shadow and a hairline border; the border is what separates them in the dark theme, where shadows barely show. The top bar hides while you scroll down and comes back on any scroll up.
 - **Search.**
   - The search field sits in the top bar and gets focus on first entry, with a clear button.
   - A segmented **Movies / TV series** selector chooses what to search.

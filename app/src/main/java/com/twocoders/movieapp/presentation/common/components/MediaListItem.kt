@@ -1,12 +1,14 @@
 package com.twocoders.movieapp.presentation.common.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,44 +24,59 @@ import com.twocoders.movieapp.presentation.common.PreviewData
 import com.twocoders.movieapp.presentation.common.iconRes
 import com.twocoders.movieapp.presentation.ui.theme.MovieAppTheme
 
-/** One row in a media list: the poster, then the title, a meta line (rating, year) and a short overview. */
+/**
+ * One media card: the poster, then the title, a meta line (rating, year) and a short overview.
+ *
+ * The card gets a soft shadow plus a hairline border. Shadows barely show on dark surfaces,
+ * so the border is what separates the cards in the dark theme.
+ */
 @Composable
 fun MediaListItem(
     media: MediaSummary,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
     ) {
-        PosterImage(
-            url = media.posterUrl,
-            fallbackIcon = media.type.iconRes(),
-            modifier = Modifier.size(width = 92.dp, height = 138.dp),
-        )
-        Column(
-            modifier = Modifier.padding(vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                text = media.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            PosterImage(
+                url = media.posterUrl,
+                fallbackIcon = media.type.iconRes(),
+                // A smaller radius than the card's, so the corners stay concentric inside the 12dp padding.
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.size(width = 88.dp, height = 132.dp),
             )
-            MetaLine(media)
-            if (media.overview.isNotBlank()) {
+            Column(
+                modifier = Modifier.padding(vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Text(
-                    text = media.overview,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
+                    text = media.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                MetaLine(media)
+                if (media.overview.isNotBlank()) {
+                    Text(
+                        text = media.overview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
