@@ -1,16 +1,23 @@
 package com.twocoders.movieapp.di
 
 import com.twocoders.movieapp.data.remote.TmdbApi
+import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.repository.MovieRepository
 import com.twocoders.movieapp.domain.repository.SearchRepository
 import com.twocoders.movieapp.domain.repository.TvShowRepository
 import com.twocoders.movieapp.domain.usecase.GetMediaDetailsUseCase
 import com.twocoders.movieapp.domain.usecase.GetPopularMoviesUseCase
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
+import com.twocoders.movieapp.presentation.details.DetailsViewModel
+import com.twocoders.movieapp.presentation.movies.MovieListViewModel
+import com.twocoders.movieapp.presentation.search.SearchViewModel
+import com.twocoders.movieapp.testutil.MainDispatcherRule
 import org.junit.Assert.assertNotNull
 import org.junit.Rule
 import org.junit.Test
+import org.koin.core.parameter.parametersOf
 import org.koin.test.KoinTest
+import org.koin.core.parameter.parametersOf
 import org.koin.test.KoinTestRule
 import org.koin.test.get
 
@@ -19,6 +26,9 @@ import org.koin.test.get
  * a constructor that changed without its module fails here, not at app launch.
  */
 class AppModulesTest : KoinTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @get:Rule
     val koinRule = KoinTestRule.create { modules(appModules) }
@@ -36,5 +46,12 @@ class AppModulesTest : KoinTest {
         assertNotNull(get<GetPopularMoviesUseCase>())
         assertNotNull(get<GetMediaDetailsUseCase>())
         assertNotNull(get<SearchMediaUseCase>())
+    }
+
+    @Test
+    fun `view models resolve, including route parameters for details`() {
+        assertNotNull(get<MovieListViewModel>())
+        assertNotNull(get<SearchViewModel>())
+        assertNotNull(get<DetailsViewModel> { parametersOf(1, MediaType.MOVIE) })
     }
 }
