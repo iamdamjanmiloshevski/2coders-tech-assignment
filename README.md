@@ -7,6 +7,7 @@ An Android app that browses movies and TV shows from [The Movie Database (TMDB)]
 | **Movies** | Endless list of popular movies, each showing a title, poster and short description |
 | **Details** | Extended information: rating, vote count, genres, runtime/seasons, directors/creators, writers and cast |
 | **Search** | Debounced search over **movies or TV series**, chosen before searching, with paginated results |
+| **Favorites** | Movies and shows the user saved with the heart, newest first, available offline |
 
 Everything you've already seen keeps working **offline**: the movie list, details, posters and past searches. See [Offline support](#offline-support).
 
@@ -71,6 +72,7 @@ com.twocoders.movieapp
 ├── data
 │   ├── remote          TmdbApi, AuthInterceptor, ApiCallHandler, TmdbJson, dto/
 │   ├── local           Room cache: MovieDatabase, entities, DAOs, MediaLocalDataSource
+│   │   └── user        user data: UserDatabase, favorites entity + DAO
 │   ├── mapper          DTO → domain, image URLs
 │   └── repository      repository implementations + NetworkFirst
 ├── presentation
@@ -78,6 +80,7 @@ com.twocoders.movieapp
 │   ├── common          shared components, error messages, formatters
 │   ├── movies | details | search   one package per screen: ViewModel, UI state, Screen
 │   ├── connectivity    offline banner + ConnectivityViewModel
+│   ├── favorites       Favorites screen, ViewModel, FavoritesDelegate (hearts on any list)
 │   ├── app             MovieAppRoot: nav graph + app-wide overlays
 │   ├── navigation      type-safe routes + AppNavHost
 │   └── ui/theme
@@ -234,16 +237,30 @@ The goal is that users can't tell they're offline for anything they've already s
 
 ---
 
+## Favorites
+
+Users save any movie or show with the heart. It's on every card (popular, search, favorites) and in the details top bar. The heart in the *Popular movies* top bar opens the Favorites list.
+
+- **Storage: a second Room database, `user_data.db`, kept apart from the cache.**
+  - **The cache:** `movie_cache.db` is disposable. It's rebuilt on any schema change, search pages are pruned, and it's excluded from backups.
+  - **Favorites:** they're user data and must never be lost. So their database has **no destructive fallback**: every schema change needs a real migration. It's included in Auto Backup and device transfer, so favorites survive a reinstall or a new phone.
+- **Why Room and not a set of ids in DataStore:** each favorite stores a snapshot (title, poster, rating, year, type, date added). The list therefore renders instantly and offline, with no request per title. Room's `Flow` queries keep every heart in sync: toggle on the details screen, and the list cards update immediately.
+- **Model:** `Favorite(media: MediaSummary, addedAtMillis)` is keyed by `MediaKey(id, type)`, because TMDB ids are only unique within a media type. `MediaDetails.toSummary()` builds the snapshot when favoriting from the details screen.
+- **Removing:** removing shows an **Undo** snackbar, and Undo restores the item in its original position, because it keeps `addedAt`. `FavoritesViewModel` keeps screen state (`Loading` / `Empty` / `Content`) separate from one-off events (`Removed`, through a `Channel`), so the snackbar shows exactly once per removal.
+- **One implementation of the hearts:** `FavoritesDelegate` gives any list ViewModel `favoriteKeys` and `toggle()`, so the logic isn't copied into each screen.
+
+---
+
 ## Testing
 
-There are 83 JVM unit tests under `app/src/test`, plus instrumented Room tests under `app/src/androidTest`. Their packages mirror the main source set:
+There are 103 JVM unit tests under `app/src/test`, plus 11 instrumented Room tests under `app/src/androidTest`. Their packages mirror the main source set:
 
 | Layer | What's covered | How |
 |---|---|---|
 | domain | use cases: dispatch by type, blank-query short-circuit, trimming | hand-written fake repositories (`fakes/`) |
 | data | every `AppError` mapping, the auth header, `null` handling, mapping (credits, image URLs, 500-page clamp), endpoint paths; `NetworkFirst` rules and an offline case per repository; cache mappers and converters | **MockWebServer** with the real Retrofit + `TmdbJson` stack (`TmdbServerRule`; going offline stops the server); `FakeMediaLocalDataSource` |
-| data (device) | Room schema and queries: page order, replacement, titles shared across lists, search pruning, details round-trips | in-memory Room, `./gradlew connectedDebugAndroidTest` |
-| presentation | pagination state transitions, `Paginator` concurrency, each ViewModel (for search: debounce, cancelling stale requests, type switch), auto-retry on reconnect, offline banner timing, display formatters | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
+| data (device) | cache: page order, replacement, titles shared across lists, search pruning, details round-trips; favorites: newest-first order, live `Flow` updates, upsert, same id across media types | in-memory Room, `./gradlew connectedDebugAndroidTest` |
+| presentation | pagination state transitions, `Paginator` concurrency, each ViewModel (for search: debounce, cancelling stale requests, type switch), auto-retry on reconnect, offline banner timing, favorites (toggle, delegate, Removed event, undo position), display formatters | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
 | di | the full Koin graph resolves | `KoinTestRule` |
 
 Fakes are preferred over mocks. They record their calls and answer from a lambda the test can swap, which keeps assertions readable.
