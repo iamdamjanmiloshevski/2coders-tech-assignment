@@ -8,6 +8,8 @@ An Android app that browses movies and TV shows from [The Movie Database (TMDB)]
 | **Details** | Extended information: rating, vote count, genres, runtime/seasons, directors/creators, writers and cast |
 | **Search** | Debounced search over **movies or TV series**, chosen before searching, with paginated results |
 
+Everything you've already seen keeps working **offline**: the movie list, details, posters and past searches. See [Offline support](#offline-support).
+
 Built with Kotlin, Jetpack Compose, Navigation Compose, Koin, Retrofit, kotlinx.serialization, Coil and coroutines/Flow.
 
 | Movies (dark) | Search (light) | Details | Details, scrolled |
@@ -41,6 +43,7 @@ Built with Kotlin, Jetpack Compose, Navigation Compose, Koin, Retrofit, kotlinx.
 ./gradlew testDebugUnitTest      # all JVM unit tests
 ./gradlew :app:testDebugUnitTest --tests "*.SearchViewModelTest"   # one class
 ./gradlew lintDebug              # Android lint
+./gradlew connectedDebugAndroidTest   # Room tests on a device or emulator
 ./gradlew assembleDebug          # build the APK
 ```
 
@@ -59,7 +62,7 @@ Clean Architecture in one `:app` module. The layers are packages, and dependenci
 
 ```
 com.twocoders.movieapp
-├── core/logging        Logger interface + Android implementation
+├── core                logging, connectivity (ConnectivityObserver), time (Clock)
 ├── domain              no Android, Retrofit or serialization imports
 │   ├── model           MediaSummary, MediaDetails (sealed), Credits, Page<T>, …
 │   ├── error           AppError (sealed), DataResult<T>
@@ -67,22 +70,25 @@ com.twocoders.movieapp
 │   └── usecase         GetPopularMovies, GetMediaDetails, SearchMedia
 ├── data
 │   ├── remote          TmdbApi, AuthInterceptor, ApiCallHandler, TmdbJson, dto/
+│   ├── local           Room cache: MovieDatabase, entities, DAOs, MediaLocalDataSource
 │   ├── mapper          DTO → domain, image URLs
-│   └── repository      repository implementations
+│   └── repository      repository implementations + NetworkFirst
 ├── presentation
 │   ├── paging          PaginationState (state machine) + Paginator
 │   ├── common          shared components, error messages, formatters
 │   ├── movies | details | search   one package per screen: ViewModel, UI state, Screen
+│   ├── connectivity    offline banner + ConnectivityViewModel
+│   ├── app             MovieAppRoot: nav graph + app-wide overlays
 │   ├── navigation      type-safe routes + AppNavHost
 │   └── ui/theme
-├── di                  Koin modules (core, network, data, domain, presentation)
+├── di                  Koin modules (core, network, local, data, domain, presentation)
 ├── application/MovieApp.kt   Application, starts Koin
 └── MainActivity.kt     single Activity
 ```
 
 ### How a request flows
 
-`MovieListScreen` → `MovieListViewModel` → `Paginator` → `GetPopularMoviesUseCase` → `MovieRepository` (interface) → `MovieRepositoryImpl` → `ApiCallHandler` + `TmdbApi` → mapped back to `DataResult<Page<MediaSummary>>` → `PaginationState` → a `StateFlow` the screen collects.
+`MovieListScreen` → `MovieListViewModel` → `Paginator` → `GetPopularMoviesUseCase` → `MovieRepository` (interface) → `MovieRepositoryImpl` → `NetworkFirst`, which uses `ApiCallHandler` + `TmdbApi` and falls back to the Room cache when offline → `DataResult<Page<MediaSummary>>` → `PaginationState` → a `StateFlow` the screen collects.
 
 ---
 
@@ -186,15 +192,58 @@ Jetpack Compose only, with Material 3. There was no design to follow, so the goa
 
 ---
 
+## Offline support
+
+The goal is that users can't tell they're offline for anything they've already seen. Only content that was never loaded needs the internet, and the app says so clearly.
+
+```
+                 ┌───────────────┐ success ┌──────────────────┐
+ repository ───► │  TMDB (fetch) │ ──────► │ save to Room     │ ──► fresh data
+                 └───────┬───────┘         └──────────────────┘
+                         │ NoConnection
+                         ▼
+                 ┌───────────────┐  found  ──► cached data (same domain objects)
+                 │ Room (lookup) │
+                 └───────────────┘  missing ──► "You're offline and this isn't saved yet"
+```
+
+- **Strategy: network first, cache fallback.** All three repositories go through one helper, `NetworkFirst`.
+  - When online, every response is saved to Room and returned, so the cache always has the latest data the user saw.
+  - When the fetch fails with `NoConnection`, the cached copy is returned.
+  - Any other error (401, 404, 5xx, parsing) is passed through, so stale data never hides a real failure.
+  - Cache reads and writes are best-effort. A cache problem is logged and never breaks a request that would otherwise work.
+- **Why Room** and not DataStore or SharedPreferences: the cache holds paginated lists, full details and per-query search results, read back by key and page. That's relational data: Room gives indexed queries, atomic page replacement in a transaction, and an exported schema. DataStore suits small key-value settings.
+- **Schema** (`data/local`, exported to `app/schemas/`):
+  - `media`: one row per title, shared by the popular list and every search.
+  - `pages` + `page_items`: ordered pages per list key (`popular:movie`, `search:movie:dune`).
+  - `details`: one row per movie or show, with genres and credits as JSON columns.
+  - Search keys ignore case, because TMDB search does. Search pages older than 7 days are pruned, along with titles no page refers to anymore.
+  - The database is only a cache, so a future schema change rebuilds it rather than migrating.
+- **What works offline:**
+  - the popular pages already scrolled through
+  - any movie or TV show already opened
+  - any search already run, for the same media type
+  - images, from Coil's 100 MB disk cache
+- **What needs the internet:**
+  - **Not cached:** a full-screen *"You're offline and this isn't saved on your device yet"*.
+  - **Next page not cached:** the list footer says *"You're offline. Connect to load more."*
+- **Feedback:**
+  - When the connection drops, a small banner (*"You're offline · showing saved content"*) slides up for 5.5 s, then gets out of the way. Coming back online hides it at once.
+  - Connectivity comes from `ConnectivityObserver`, which only counts validated internet, so a captive-portal Wi-Fi reads as offline.
+- **Auto-recovery:** every screen with a failed load retries by itself when the device reconnects. Nobody has to tap *Try again*.
+
+---
+
 ## Testing
 
-There are 55 JVM unit tests under `app/src/test`. Their packages mirror the main source set:
+There are 83 JVM unit tests under `app/src/test`, plus instrumented Room tests under `app/src/androidTest`. Their packages mirror the main source set:
 
 | Layer | What's covered | How |
 |---|---|---|
 | domain | use cases: dispatch by type, blank-query short-circuit, trimming | hand-written fake repositories (`fakes/`) |
-| data | every `AppError` mapping, the auth header, `null` handling, mapping (credits, image URLs, 500-page clamp), endpoint paths | **MockWebServer** with the real Retrofit + `TmdbJson` stack (`TmdbServerRule`) |
-| presentation | pagination state transitions, `Paginator` concurrency, each ViewModel (for search: debounce, cancelling stale requests, type switch), display formatters | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
+| data | every `AppError` mapping, the auth header, `null` handling, mapping (credits, image URLs, 500-page clamp), endpoint paths; `NetworkFirst` rules and an offline case per repository; cache mappers and converters | **MockWebServer** with the real Retrofit + `TmdbJson` stack (`TmdbServerRule`; going offline stops the server); `FakeMediaLocalDataSource` |
+| data (device) | Room schema and queries: page order, replacement, titles shared across lists, search pruning, details round-trips | in-memory Room, `./gradlew connectedDebugAndroidTest` |
+| presentation | pagination state transitions, `Paginator` concurrency, each ViewModel (for search: debounce, cancelling stale requests, type switch), auto-retry on reconnect, offline banner timing, display formatters | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
 | di | the full Koin graph resolves | `KoinTestRule` |
 
 Fakes are preferred over mocks. They record their calls and answer from a lambda the test can swap, which keeps assertions readable.
@@ -203,5 +252,5 @@ Fakes are preferred over mocks. They record their calls and answer from a lambda
 
 ## Further documentation
 
-- [`docs/runbooks/tmdb.md`](docs/runbooks/tmdb.md): TMDB integration runbook (credentials, gotchas, common errors).
+- [`docs/runbooks/tmdb.md`](docs/runbooks/tmdb.md): TMDB integration runbook (credentials, gotchas, common errors, offline cache).
 - KDoc on public types explains the reasoning behind decisions, not only what the code does.
