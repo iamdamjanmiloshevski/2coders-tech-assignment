@@ -48,7 +48,6 @@ fun PaginatedMediaList(
     onRetry: () -> Unit,
     emptyContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    showMediaType: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(),
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -69,7 +68,6 @@ fun PaginatedMediaList(
                     MediaListItem(
                         media = media,
                         onClick = { onItemClick(media) },
-                        showMediaType = showMediaType,
                         modifier = Modifier.animateItem(),
                     )
                 }
