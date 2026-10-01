@@ -10,3 +10,6 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+# MediaType is a Navigation route argument (DetailsRoute) and is serialized by name.
+# Keep it explicitly instead of annotating it with @Keep, so the domain layer stays free of Android dependencies.
+-keep enum com.twocoders.movieapp.domain.model.MediaType { *; }
