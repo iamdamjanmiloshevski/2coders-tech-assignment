@@ -5,6 +5,7 @@ val appModules = listOf(
     coreModule,
     networkModule,
     localModule,
+    userDataModule,
     dataModule,
     domainModule,
     presentationModule,

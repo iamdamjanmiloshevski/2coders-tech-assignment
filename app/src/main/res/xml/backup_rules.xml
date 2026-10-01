@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Auto Backup rules for Android 11 and lower (Android 12+ uses data_extraction_rules.xml).
+    Everything is backed up, including user_data.db (favorites), except the TMDB cache, which is
+    re-downloadable and would only waste the user's backup quota.
+    See https://developer.android.com/guide/topics/data/autobackup
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="database" path="movie_cache.db" />
+    <exclude domain="database" path="movie_cache.db-shm" />
+    <exclude domain="database" path="movie_cache.db-wal" />
 </full-backup-content>

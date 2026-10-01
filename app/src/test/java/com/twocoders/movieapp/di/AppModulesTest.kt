@@ -9,12 +9,17 @@ import com.twocoders.movieapp.domain.repository.SearchRepository
 import com.twocoders.movieapp.domain.repository.TvShowRepository
 import com.twocoders.movieapp.domain.usecase.GetMediaDetailsUseCase
 import com.twocoders.movieapp.domain.usecase.GetPopularMoviesUseCase
+import com.twocoders.movieapp.domain.repository.FavoritesRepository
+import com.twocoders.movieapp.domain.usecase.ObserveFavoritesUseCase
+import com.twocoders.movieapp.domain.usecase.RestoreFavoriteUseCase
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
+import com.twocoders.movieapp.domain.usecase.ToggleFavoriteUseCase
 import com.twocoders.movieapp.presentation.connectivity.ConnectivityViewModel
 import com.twocoders.movieapp.presentation.details.DetailsViewModel
 import com.twocoders.movieapp.presentation.movies.MovieListViewModel
 import com.twocoders.movieapp.presentation.search.SearchViewModel
 import com.twocoders.movieapp.fakes.FakeConnectivityObserver
+import com.twocoders.movieapp.fakes.FakeFavoritesRepository
 import com.twocoders.movieapp.fakes.FakeMediaLocalDataSource
 import com.twocoders.movieapp.testutil.MainDispatcherRule
 import org.junit.Assert.assertNotNull
@@ -55,6 +60,9 @@ class AppModulesTest : KoinTest {
         assertNotNull(get<GetPopularMoviesUseCase>())
         assertNotNull(get<GetMediaDetailsUseCase>())
         assertNotNull(get<SearchMediaUseCase>())
+        assertNotNull(get<ObserveFavoritesUseCase>())
+        assertNotNull(get<ToggleFavoriteUseCase>())
+        assertNotNull(get<RestoreFavoriteUseCase>())
     }
 
     @Test
@@ -69,4 +77,5 @@ class AppModulesTest : KoinTest {
 private val androidFreeOverrides = module {
     single<ConnectivityObserver> { FakeConnectivityObserver() }
     single<MediaLocalDataSource> { FakeMediaLocalDataSource() }
+    single<FavoritesRepository> { FakeFavoritesRepository() }
 }
