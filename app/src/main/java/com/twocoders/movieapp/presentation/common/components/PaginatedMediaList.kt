@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.twocoders.movieapp.R
+import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.model.MediaSummary
 import com.twocoders.movieapp.presentation.paging.PaginationState
 import com.twocoders.movieapp.presentation.paging.PaginationStatus
@@ -117,7 +118,9 @@ private fun ListFooter(status: PaginationStatus, onRetry: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.list_load_more_failed),
+                    text = stringResource(
+                        if (status.error == AppError.NoConnection) R.string.list_load_more_offline else R.string.list_load_more_failed,
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

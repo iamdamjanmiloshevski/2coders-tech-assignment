@@ -11,6 +11,7 @@
     <string name="movie_list_title">Popular movies</string>
     <string name="list_end">That\'s everything</string>
     <string name="list_load_more_failed">Couldn\'t load more.</string>
+    <string name="list_load_more_offline">You\'re offline. Connect to load more.</string>
     <string name="list_empty_title">Nothing here yet</string>
     <string name="list_empty_message">TMDB returned no movies. Try again in a moment.</string>
 
@@ -46,8 +47,12 @@
         <item quantity="other">%d seasons</item>
     </plurals>
 
+    <!-- Connectivity -->
+    <string name="offline_banner">You\'re offline · showing saved content</string>
+
     <!-- Errors: short and actionable. Full details are only logged. -->
-    <string name="error_no_connection">You\'re offline. Check your connection and try again.</string>
+    <!-- Only shown for content that isn't cached, since anything cached keeps working offline. -->
+    <string name="error_no_connection">You\'re offline and this isn\'t saved on your device yet. Connect to the internet and try again.</string>
     <string name="error_unauthorized">TMDB rejected the API token. Check tmdb.properties and rebuild.</string>
     <string name="error_not_found">This title isn\'t available anymore.</string>
     <string name="error_http_code">TMDB is having trouble (%1$d). Please try again.</string>

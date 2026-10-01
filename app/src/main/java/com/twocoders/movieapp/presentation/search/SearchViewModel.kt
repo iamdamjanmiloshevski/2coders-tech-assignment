@@ -2,6 +2,8 @@ package com.twocoders.movieapp.presentation.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.twocoders.movieapp.core.connectivity.ConnectivityObserver
+import com.twocoders.movieapp.core.connectivity.reconnections
 import com.twocoders.movieapp.domain.model.MediaSummary
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * Throttled search over movies or TV shows.
@@ -32,10 +35,12 @@ import kotlinx.coroutines.flow.stateIn
  * - a new query cancels the request still running for the old one, so a stale response can never replace newer results
  *
  * Each search gets its own [Paginator], scoped to the inner flow, so infinite scroll works on search results too.
+ * A failed search, or a failed next page, retries on its own when the device reconnects.
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class SearchViewModel(
     private val searchMedia: SearchMediaUseCase,
+    connectivity: ConnectivityObserver,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -58,6 +63,10 @@ class SearchViewModel(
     val state: StateFlow<SearchUiState> =
         combine(query, mediaType, results, ::SearchUiState)
             .stateIn(viewModelScope, SharingStarted.Eagerly, SearchUiState())
+
+    init {
+        viewModelScope.launch { connectivity.reconnections().collect { retry() } }
+    }
 
     fun onQueryChange(value: String) {
         query.value = value

@@ -5,10 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.twocoders.movieapp.presentation.navigation.AppNavHost
+import com.twocoders.movieapp.presentation.app.MovieAppRoot
 import com.twocoders.movieapp.presentation.ui.theme.MovieAppTheme
 
-/** The only Activity. Every screen is a Compose destination in [AppNavHost]. */
+/** The only Activity. Everything it shows is in [MovieAppRoot]: the navigation graph and app-wide overlays. */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must run before super.onCreate. It swaps the launch theme for the app theme once the first frame is ready.
@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MovieAppTheme {
-                AppNavHost()
+                MovieAppRoot()
             }
         }
     }

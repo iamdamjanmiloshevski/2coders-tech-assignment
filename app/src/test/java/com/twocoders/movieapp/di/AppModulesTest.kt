@@ -10,6 +10,7 @@ import com.twocoders.movieapp.domain.repository.TvShowRepository
 import com.twocoders.movieapp.domain.usecase.GetMediaDetailsUseCase
 import com.twocoders.movieapp.domain.usecase.GetPopularMoviesUseCase
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
+import com.twocoders.movieapp.presentation.connectivity.ConnectivityViewModel
 import com.twocoders.movieapp.presentation.details.DetailsViewModel
 import com.twocoders.movieapp.presentation.movies.MovieListViewModel
 import com.twocoders.movieapp.presentation.search.SearchViewModel
@@ -61,6 +62,7 @@ class AppModulesTest : KoinTest {
         assertNotNull(get<MovieListViewModel>())
         assertNotNull(get<SearchViewModel>())
         assertNotNull(get<DetailsViewModel> { parametersOf(1, MediaType.MOVIE) })
+        assertNotNull(get<ConnectivityViewModel>())
     }
 }
 
