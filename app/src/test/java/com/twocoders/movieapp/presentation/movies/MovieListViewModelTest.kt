@@ -3,7 +3,11 @@ package com.twocoders.movieapp.presentation.movies
 import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.usecase.GetPopularMoviesUseCase
+import com.twocoders.movieapp.domain.model.key
+import com.twocoders.movieapp.domain.usecase.ObserveFavoritesUseCase
+import com.twocoders.movieapp.domain.usecase.ToggleFavoriteUseCase
 import com.twocoders.movieapp.fakes.FakeConnectivityObserver
+import com.twocoders.movieapp.fakes.FakeFavoritesRepository
 import com.twocoders.movieapp.fakes.FakeMovieRepository
 import com.twocoders.movieapp.fakes.TestData
 import com.twocoders.movieapp.presentation.paging.PaginationStatus
@@ -21,8 +25,14 @@ class MovieListViewModelTest {
 
     private val repository = FakeMovieRepository()
     private val connectivity = FakeConnectivityObserver()
+    private val favorites = FakeFavoritesRepository()
 
-    private fun viewModel() = MovieListViewModel(GetPopularMoviesUseCase(repository), connectivity)
+    private fun viewModel() = MovieListViewModel(
+        GetPopularMoviesUseCase(repository),
+        connectivity,
+        ObserveFavoritesUseCase(favorites),
+        ToggleFavoriteUseCase(favorites),
+    )
 
     @Test
     fun `loads the first page on creation`() = runTest {
@@ -88,5 +98,20 @@ class MovieListViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(1), repository.popularRequests)
+    }
+
+    @Test
+    fun `toggling a movie updates the favorite hearts`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        val movie = viewModel.state.value.items.first()
+
+        viewModel.toggleFavorite(movie)
+        advanceUntilIdle()
+        assertEquals(setOf(movie.key), viewModel.favoriteKeys.value)
+
+        viewModel.toggleFavorite(movie)
+        advanceUntilIdle()
+        assertEquals(emptySet<Any>(), viewModel.favoriteKeys.value)
     }
 }

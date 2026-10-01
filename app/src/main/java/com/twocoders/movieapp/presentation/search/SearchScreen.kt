@@ -52,6 +52,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.twocoders.movieapp.R
+import com.twocoders.movieapp.domain.model.MediaKey
 import com.twocoders.movieapp.domain.model.MediaSummary
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.presentation.common.PreviewData
@@ -71,8 +72,11 @@ fun SearchScreen(
     onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val favoriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     SearchContent(
         state = state,
+        favoriteKeys = favoriteKeys,
+        onToggleFavorite = viewModel::toggleFavorite,
         onQueryChange = viewModel::onQueryChange,
         onMediaTypeChange = viewModel::onMediaTypeChange,
         onMediaClick = onMediaClick,
@@ -92,6 +96,8 @@ fun SearchContent(
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     onBack: () -> Unit,
+    favoriteKeys: Set<MediaKey> = emptySet(),
+    onToggleFavorite: (MediaSummary) -> Unit = {},
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val hideKeyboardOnScroll = remember(keyboard) { HideKeyboardOnScroll(keyboard) }
@@ -134,6 +140,8 @@ fun SearchContent(
                     onItemClick = onMediaClick,
                     onLoadMore = onLoadMore,
                     onRetry = onRetry,
+                    favoriteKeys = favoriteKeys,
+                    onToggleFavorite = onToggleFavorite,
                     contentPadding = bottomContentPadding(padding),
                     modifier = Modifier
                         .fillMaxSize()

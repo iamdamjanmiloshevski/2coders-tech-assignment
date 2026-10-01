@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.twocoders.movieapp.R
+import com.twocoders.movieapp.domain.model.MediaKey
 import com.twocoders.movieapp.domain.model.MediaSummary
 import com.twocoders.movieapp.presentation.common.PreviewData
 import com.twocoders.movieapp.presentation.common.components.EmptyState
@@ -37,8 +38,11 @@ fun MovieListScreen(
     onSearchClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val favoriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     MovieListContent(
         state = state,
+        favoriteKeys = favoriteKeys,
+        onToggleFavorite = viewModel::toggleFavorite,
         onMediaClick = onMediaClick,
         onSearchClick = onSearchClick,
         onLoadMore = viewModel::loadMore,
@@ -55,6 +59,8 @@ fun MovieListContent(
     onSearchClick: () -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
+    favoriteKeys: Set<MediaKey> = emptySet(),
+    onToggleFavorite: (MediaSummary) -> Unit = {},
 ) {
     // Hides the bar while scrolling down through the feed, and brings it back on any scroll up.
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -78,6 +84,8 @@ fun MovieListContent(
             onItemClick = onMediaClick,
             onLoadMore = onLoadMore,
             onRetry = onRetry,
+            favoriteKeys = favoriteKeys,
+            onToggleFavorite = onToggleFavorite,
             contentPadding = bottomContentPadding(padding),
             modifier = Modifier
                 .fillMaxSize()

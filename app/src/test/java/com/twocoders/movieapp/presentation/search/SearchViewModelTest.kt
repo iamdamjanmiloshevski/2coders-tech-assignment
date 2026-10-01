@@ -4,7 +4,10 @@ import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
+import com.twocoders.movieapp.domain.usecase.ObserveFavoritesUseCase
+import com.twocoders.movieapp.domain.usecase.ToggleFavoriteUseCase
 import com.twocoders.movieapp.fakes.FakeConnectivityObserver
+import com.twocoders.movieapp.fakes.FakeFavoritesRepository
 import com.twocoders.movieapp.fakes.FakeSearchRepository
 import com.twocoders.movieapp.fakes.FakeSearchRepository.Request
 import com.twocoders.movieapp.fakes.TestData
@@ -28,7 +31,10 @@ class SearchViewModelTest {
 
     private val repository = FakeSearchRepository()
     private val connectivity = FakeConnectivityObserver()
-    private val viewModel by lazy { SearchViewModel(SearchMediaUseCase(repository), connectivity) }
+    private val favorites = FakeFavoritesRepository()
+    private val viewModel by lazy {
+        SearchViewModel(SearchMediaUseCase(repository), connectivity, ObserveFavoritesUseCase(favorites), ToggleFavoriteUseCase(favorites))
+    }
 
     private val SearchViewModel.content: SearchResults.Content
         get() = state.value.results as SearchResults.Content

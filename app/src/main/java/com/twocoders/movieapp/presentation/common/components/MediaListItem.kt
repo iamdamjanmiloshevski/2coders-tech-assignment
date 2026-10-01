@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.animation.core.animateDpAsState
@@ -38,6 +39,7 @@ private val PressedElevation = 4.dp
 
 /**
  * One floating media card: the poster, then the title, a meta line (rating, year) and a short overview.
+ * With [onToggleFavorite] set, a heart next to the title adds or removes the title from favorites.
  *
  * The card floats on a wide, soft shadow over a lighter surface than the page. When pressed,
  * it settles toward the page (smaller shadow, slight scale-down). Shadows barely show on dark
@@ -48,6 +50,8 @@ fun MediaListItem(
     media: MediaSummary,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val isDark = colors.surface.luminance() < 0.5f
@@ -93,12 +97,23 @@ fun MediaListItem(
                 modifier = Modifier.padding(vertical = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(
-                    text = media.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        text = media.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (onToggleFavorite != null) {
+                        FavoriteButton(
+                            isFavorite = isFavorite,
+                            onToggle = onToggleFavorite,
+                            // Pulled into the card's padding, so the 48dp touch target doesn't push the title down.
+                            modifier = Modifier.offset(x = 8.dp, y = (-10).dp),
+                        )
+                    }
+                }
                 MetaLine(media)
                 if (media.overview.isNotBlank()) {
                     Text(

@@ -47,6 +47,10 @@
         <item quantity="other">%d seasons</item>
     </plurals>
 
+    <!-- Favorites -->
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+
     <!-- Connectivity -->
     <string name="offline_banner">You\'re offline · showing saved content</string>
 

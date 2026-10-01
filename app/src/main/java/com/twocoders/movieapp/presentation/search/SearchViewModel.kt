@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.twocoders.movieapp.core.connectivity.ConnectivityObserver
 import com.twocoders.movieapp.core.connectivity.reconnections
+import com.twocoders.movieapp.domain.model.MediaKey
 import com.twocoders.movieapp.domain.model.MediaSummary
 import com.twocoders.movieapp.domain.model.MediaType
+import com.twocoders.movieapp.domain.usecase.ObserveFavoritesUseCase
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
+import com.twocoders.movieapp.domain.usecase.ToggleFavoriteUseCase
+import com.twocoders.movieapp.presentation.favorites.FavoritesDelegate
 import com.twocoders.movieapp.presentation.paging.Paginator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -41,7 +45,14 @@ import kotlinx.coroutines.launch
 class SearchViewModel(
     private val searchMedia: SearchMediaUseCase,
     connectivity: ConnectivityObserver,
+    observeFavorites: ObserveFavoritesUseCase,
+    toggleFavorite: ToggleFavoriteUseCase,
 ) : ViewModel() {
+
+    private val favorites = FavoritesDelegate(observeFavorites, toggleFavorite, viewModelScope)
+
+    /** Titles shown with a filled heart. */
+    val favoriteKeys: StateFlow<Set<MediaKey>> = favorites.favoriteKeys
 
     private val query = MutableStateFlow("")
     private val mediaType = MutableStateFlow(MediaType.MOVIE)
@@ -87,6 +98,8 @@ class SearchViewModel(
     fun retry() {
         activePaginator?.retry()
     }
+
+    fun toggleFavorite(media: MediaSummary) = favorites.toggle(media)
 
     private fun resultsFor(request: SearchRequest): Flow<SearchResults> {
         if (request.query.isEmpty()) {

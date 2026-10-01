@@ -26,7 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.twocoders.movieapp.R
 import com.twocoders.movieapp.domain.error.AppError
+import com.twocoders.movieapp.domain.model.MediaKey
 import com.twocoders.movieapp.domain.model.MediaSummary
+import com.twocoders.movieapp.domain.model.key
 import com.twocoders.movieapp.presentation.paging.PaginationState
 import com.twocoders.movieapp.presentation.paging.PaginationStatus
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -39,6 +41,8 @@ private const val PREFETCH_DISTANCE = 5
  * Renders a [PaginationState] of media: full-screen states for the first page, then a list
  * with infinite scroll and a status footer. Shared by the movie feed and search results.
  *
+ * @param favoriteKeys titles that show a filled heart.
+ * @param onToggleFavorite when set, every card gets a heart.
  * @param emptyContent shown when loading finished with no items. Each screen explains "empty" differently.
  *   It's already placed inside [contentPadding].
  */
@@ -50,6 +54,8 @@ fun PaginatedMediaList(
     onRetry: () -> Unit,
     emptyContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    favoriteKeys: Set<MediaKey> = emptySet(),
+    onToggleFavorite: ((MediaSummary) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(),
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -73,6 +79,8 @@ fun PaginatedMediaList(
                     MediaListItem(
                         media = media,
                         onClick = { onItemClick(media) },
+                        isFavorite = media.key in favoriteKeys,
+                        onToggleFavorite = onToggleFavorite?.let { toggle -> { toggle(media) } },
                         modifier = Modifier.animateItem(),
                     )
                 }

@@ -15,5 +15,5 @@ val presentationModule = module {
     viewModelOf(::SearchViewModel)
     viewModelOf(::ConnectivityViewModel)
     // Route arguments are passed at the call site: koinViewModel { parametersOf(id, type) }.
-    viewModel { (mediaId: Int, mediaType: MediaType) -> DetailsViewModel(mediaId, mediaType, get(), get()) }
+    viewModel { (mediaId: Int, mediaType: MediaType) -> DetailsViewModel(mediaId, mediaType, get(), get(), get(), get()) }
 }
