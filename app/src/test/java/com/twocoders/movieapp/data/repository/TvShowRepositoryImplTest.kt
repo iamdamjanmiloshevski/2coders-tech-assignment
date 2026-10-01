@@ -13,7 +13,7 @@ class TvShowRepositoryImplTest {
     @get:Rule
     val tmdb = TmdbServerRule()
 
-    private val repository by lazy { TvShowRepositoryImpl(tmdb.api, tmdb.apiCallHandler, tmdb.images) }
+    private val repository by lazy { TvShowRepositoryImpl(tmdb.api, tmdb.apiCallHandler, tmdb.images, tmdb.local, tmdb.networkFirst) }
 
     @Test
     fun `details map name to title and creators to directors`() = runTest {
@@ -41,5 +41,15 @@ class TvShowRepositoryImplTest {
         tmdb.enqueue(code = 404, body = """{"status_code":34,"status_message":"Not found"}""")
 
         assertEquals(DataResult.Failure(AppError.NotFound("Not found")), repository.getTvShowDetails(id = -1))
+    }
+
+    @Test
+    fun `tv details are served offline once seen`() = runTest {
+        tmdb.enqueue(body = """{"id":1396,"name":"Breaking Bad","number_of_seasons":5}""")
+        repository.getTvShowDetails(id = 1396)
+
+        tmdb.goOffline()
+
+        assertEquals("Breaking Bad", (repository.getTvShowDetails(id = 1396) as DataResult.Success).data.title)
     }
 }

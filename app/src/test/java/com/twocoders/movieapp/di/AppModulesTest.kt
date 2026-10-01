@@ -1,6 +1,7 @@
 package com.twocoders.movieapp.di
 
 import com.twocoders.movieapp.core.connectivity.ConnectivityObserver
+import com.twocoders.movieapp.data.local.MediaLocalDataSource
 import com.twocoders.movieapp.data.remote.TmdbApi
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.repository.MovieRepository
@@ -13,6 +14,7 @@ import com.twocoders.movieapp.presentation.details.DetailsViewModel
 import com.twocoders.movieapp.presentation.movies.MovieListViewModel
 import com.twocoders.movieapp.presentation.search.SearchViewModel
 import com.twocoders.movieapp.fakes.FakeConnectivityObserver
+import com.twocoders.movieapp.fakes.FakeMediaLocalDataSource
 import com.twocoders.movieapp.testutil.MainDispatcherRule
 import org.junit.Assert.assertNotNull
 import org.junit.Rule
@@ -64,4 +66,5 @@ class AppModulesTest : KoinTest {
 
 private val androidFreeOverrides = module {
     single<ConnectivityObserver> { FakeConnectivityObserver() }
+    single<MediaLocalDataSource> { FakeMediaLocalDataSource() }
 }

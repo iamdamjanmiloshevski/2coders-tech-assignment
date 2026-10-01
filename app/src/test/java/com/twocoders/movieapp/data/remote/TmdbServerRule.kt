@@ -1,7 +1,9 @@
 package com.twocoders.movieapp.data.remote
 
 import com.twocoders.movieapp.data.mapper.ImageUrlBuilder
+import com.twocoders.movieapp.data.repository.NetworkFirst
 import com.twocoders.movieapp.fakes.FakeLogger
+import com.twocoders.movieapp.fakes.FakeMediaLocalDataSource
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -22,6 +24,8 @@ class TmdbServerRule : ExternalResource() {
     val server = MockWebServer()
     val logger = FakeLogger()
     val images = ImageUrlBuilder("https://image.test/t/p/")
+    val local = FakeMediaLocalDataSource()
+    val networkFirst = NetworkFirst(logger)
 
     lateinit var api: TmdbApi
         private set
@@ -49,6 +53,14 @@ class TmdbServerRule : ExternalResource() {
 
     fun enqueue(code: Int = 200, body: String) {
         server.enqueue(MockResponse().setResponseCode(code).setBody(body))
+    }
+
+    /**
+     * Simulates airplane mode: the server goes away, so every following request fails to connect.
+     * Dropping a single response isn't enough, because OkHttp silently retries on a pooled connection.
+     */
+    fun goOffline() {
+        server.shutdown()
     }
 
     fun takeRequest(): RecordedRequest = server.takeRequest(1, TimeUnit.SECONDS)!!

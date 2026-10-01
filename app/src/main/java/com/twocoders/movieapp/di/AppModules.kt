@@ -4,6 +4,7 @@ package com.twocoders.movieapp.di
 val appModules = listOf(
     coreModule,
     networkModule,
+    localModule,
     dataModule,
     domainModule,
     presentationModule,

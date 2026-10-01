@@ -2,6 +2,7 @@ package com.twocoders.movieapp.data.repository
 
 import com.twocoders.movieapp.data.mapper.TMDB_MAX_PAGE
 import com.twocoders.movieapp.data.remote.TmdbServerRule
+import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.model.MediaType
 import kotlinx.coroutines.test.runTest
@@ -14,7 +15,7 @@ class SearchRepositoryImplTest {
     @get:Rule
     val tmdb = TmdbServerRule()
 
-    private val repository by lazy { SearchRepositoryImpl(tmdb.api, tmdb.apiCallHandler, tmdb.images) }
+    private val repository by lazy { SearchRepositoryImpl(tmdb.api, tmdb.apiCallHandler, tmdb.images, tmdb.local, tmdb.networkFirst) }
 
     @Test
     fun `movie search hits search-movie with an encoded query`() = runTest {
@@ -45,5 +46,26 @@ class SearchRepositoryImplTest {
         val page = (repository.search("a", MediaType.MOVIE, page = 1) as DataResult.Success).data
 
         assertEquals(TMDB_MAX_PAGE, page.totalPages)
+    }
+
+    @Test
+    fun `a past search works offline, regardless of letter case`() = runTest {
+        tmdb.enqueue(body = """{"page":1,"total_pages":1,"results":[{"id":1,"title":"Dune"}]}""")
+        repository.search("dune", MediaType.MOVIE, page = 1)
+
+        tmdb.goOffline()
+        val offline = repository.search("Dune", MediaType.MOVIE, page = 1)
+
+        assertEquals("Dune", (offline as DataResult.Success).data.items.single().title)
+    }
+
+    @Test
+    fun `cached movie results are not served for a tv search`() = runTest {
+        tmdb.enqueue(body = """{"page":1,"total_pages":1,"results":[{"id":1,"title":"Dune"}]}""")
+        repository.search("dune", MediaType.MOVIE, page = 1)
+
+        tmdb.goOffline()
+
+        assertEquals(DataResult.Failure(AppError.NoConnection), repository.search("dune", MediaType.TV_SHOW, page = 1))
     }
 }
