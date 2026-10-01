@@ -40,6 +40,7 @@ private const val PREFETCH_DISTANCE = 5
  * with infinite scroll and a status footer. Shared by the movie feed and search results.
  *
  * @param emptyContent shown when loading finished with no items. Each screen explains "empty" differently.
+ *   It's already placed inside [contentPadding].
  */
 @Composable
 fun PaginatedMediaList(
@@ -53,14 +54,17 @@ fun PaginatedMediaList(
     listState: LazyListState = rememberLazyListState(),
 ) {
     val status = state.status
+    // Full-screen states use the list's content padding too, so they're centred in the visible
+    // area: above the navigation bar, or above the keyboard on the search screen.
+    val fullScreenModifier = modifier.padding(contentPadding)
     when {
         status == PaginationStatus.LoadingFirstPage ||
-            (status == PaginationStatus.Idle && state.items.isEmpty()) -> FullScreenLoading(modifier)
+            (status == PaginationStatus.Idle && state.items.isEmpty()) -> FullScreenLoading(fullScreenModifier)
 
         status is PaginationStatus.Error && status.isFirstPage ->
-            FullScreenError(error = status.error, onRetry = onRetry, modifier = modifier)
+            FullScreenError(error = status.error, onRetry = onRetry, modifier = fullScreenModifier)
 
-        state.isEmpty -> Box(modifier) { emptyContent() }
+        state.isEmpty -> Box(fullScreenModifier) { emptyContent() }
 
         else -> {
             LoadMoreWhenNearEnd(listState, onLoadMore)
