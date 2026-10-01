@@ -1,3 +1,58 @@
 <resources>
     <string name="app_name">MovieApp</string>
+
+    <!-- Actions -->
+    <string name="action_search">Search</string>
+    <string name="action_back">Back</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_clear">Clear</string>
+
+    <!-- Movie list -->
+    <string name="movie_list_title">Popular movies</string>
+    <string name="list_end">That\'s everything</string>
+    <string name="list_load_more_failed">Couldn\'t load more.</string>
+    <string name="list_empty_title">Nothing here yet</string>
+    <string name="list_empty_message">TMDB returned no movies. Try again in a moment.</string>
+
+    <!-- Search -->
+    <string name="search_hint">Search titles</string>
+    <string name="search_type_movies">Movies</string>
+    <string name="search_type_tv">TV series</string>
+    <string name="search_idle_title">Find movies and series</string>
+    <string name="search_idle_message">Choose what to look for, then start typing.</string>
+    <string name="search_empty_title">Nothing found</string>
+    <string name="search_empty_message">No results for “%1$s”.</string>
+
+    <!-- Media -->
+    <string name="media_type_movie">Movie</string>
+    <string name="media_type_tv">TV series</string>
+    <string name="rating_content_description">Rated %1$s out of 10</string>
+
+    <!-- Details -->
+    <string name="details_out_of_ten">/10</string>
+    <string name="details_votes">%1$s votes</string>
+    <string name="details_overview">Overview</string>
+    <string name="details_no_overview">No overview available.</string>
+    <string name="details_directed_by">Directed by</string>
+    <string name="details_created_by">Created by</string>
+    <string name="details_written_by">Written by</string>
+    <string name="details_cast">Cast</string>
+    <string name="details_facts">Facts</string>
+    <string name="details_budget">Budget</string>
+    <string name="details_revenue">Revenue</string>
+    <string name="details_runtime">Runtime</string>
+    <string name="details_status">Status</string>
+    <string name="details_seasons">Seasons</string>
+    <string name="details_episodes">Episodes</string>
+    <plurals name="details_seasons_count">
+        <item quantity="one">%d season</item>
+        <item quantity="other">%d seasons</item>
+    </plurals>
+
+    <!-- Errors: short and actionable. Full details are only logged. -->
+    <string name="error_no_connection">You\'re offline. Check your connection and try again.</string>
+    <string name="error_unauthorized">TMDB rejected the API token. Check tmdb.properties and rebuild.</string>
+    <string name="error_not_found">This title isn\'t available anymore.</string>
+    <string name="error_http_code">TMDB is having trouble (%1$d). Please try again.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
 </resources>
