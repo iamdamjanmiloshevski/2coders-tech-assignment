@@ -51,6 +51,8 @@ Layers are packages under `com.twocoders.movieapp`. Dependencies only point inwa
   - Text goes in `strings.xml`. Map errors with `AppError.toMessage()`. Formatting lives in `Formatters.kt`, as pure functions with tests.
   - Colours come only from `MaterialTheme.colorScheme`, which is the brand palette in `ui/theme/Color.kt`. Dynamic colour is off on purpose.
   - Edge-to-edge: list bottom insets go into `contentPadding` (`bottomContentPadding`/`paddingExceptBottom`). Search adds the IME to the Scaffold insets.
+  - **Splash:** use the AndroidX SplashScreen API only (`Theme.MovieApp.Starting` and `installSplashScreen()` before `super.onCreate`). Never add a splash Activity or a splash composable.
+  - **Portrait:** the activity is locked to portrait, but Android 16+ ignores that on large screens, so keep layouts working in landscape.
   - Icons come from `material-icons-core`. Anything outside that set is a vector drawable in `res/drawable`, so don't add `material-icons-extended`.
 - DI has one Koin module per layer in `di/`, all listed in `appModules`. When you add a binding, `di/AppModulesTest` should resolve it.
 - Package names mirror directories.

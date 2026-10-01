@@ -157,6 +157,8 @@ TMDB sometimes sends `null` where a list is expected. `TmdbJson` sets `coerceInp
 
 Jetpack Compose only, with Material 3. There was no design to follow, so the goal was simple and calm: let the posters carry the colour, and keep the UI out of the way.
 
+- **Splash screen.** It uses the AndroidX SplashScreen API (`installSplashScreen()` in `MainActivity` and `Theme.MovieApp.Starting`), so there's no separate splash Activity or composable. The splash is native on Android 12+ and backported below. Its background matches the app background in both themes, so the hand-off is seamless.
+- **Edge-to-edge and portrait.** Edge-to-edge is on everywhere. It's enforced from targetSdk 35, and `enableEdgeToEdge()` gives older versions the same look. The app is locked to portrait, but Android 16+ ignores the lock on large screens, so layouts still work in landscape.
 - **Brand theme.** A warm amber accent on neutral surfaces, with full light and dark colour schemes. Dynamic colour is turned off on purpose, so every reviewer sees the same app. The window background matches the Compose background, so there's no colour flash at launch.
 - **Movies.** Each title is a floating card with a poster, title, ★ rating, year and a 3-line overview. In light theme the cards are white on the warm page, with a wide, soft shadow. In dark theme they use a raised tone and a faint border, because shadows don't show on dark surfaces. Pressing a card makes it settle toward the page.
 - **Search.**
