@@ -71,7 +71,7 @@ com.twocoders.movieapp
 │   ├── navigation      type-safe routes + AppNavHost
 │   └── ui/theme
 ├── di                  Koin modules (core, network, data, domain, presentation)
-├── MovieApp.kt         Application, starts Koin
+├── application/MovieApp.kt   Application, starts Koin
 └── MainActivity.kt     single Activity
 ```
 
