@@ -16,6 +16,7 @@ import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
 import com.twocoders.movieapp.domain.usecase.ToggleFavoriteUseCase
 import com.twocoders.movieapp.presentation.connectivity.ConnectivityViewModel
 import com.twocoders.movieapp.presentation.details.DetailsViewModel
+import com.twocoders.movieapp.presentation.favorites.FavoritesViewModel
 import com.twocoders.movieapp.presentation.movies.MovieListViewModel
 import com.twocoders.movieapp.presentation.search.SearchViewModel
 import com.twocoders.movieapp.fakes.FakeConnectivityObserver
@@ -71,6 +72,7 @@ class AppModulesTest : KoinTest {
         assertNotNull(get<SearchViewModel>())
         assertNotNull(get<DetailsViewModel> { parametersOf(1, MediaType.MOVIE) })
         assertNotNull(get<ConnectivityViewModel>())
+        assertNotNull(get<FavoritesViewModel>())
     }
 }
 

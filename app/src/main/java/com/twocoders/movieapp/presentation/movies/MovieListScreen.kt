@@ -2,6 +2,7 @@ package com.twocoders.movieapp.presentation.movies
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ fun MovieListScreen(
     viewModel: MovieListViewModel,
     onMediaClick: (MediaSummary) -> Unit,
     onSearchClick: () -> Unit,
+    onFavoritesClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val favoriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
@@ -45,6 +47,7 @@ fun MovieListScreen(
         onToggleFavorite = viewModel::toggleFavorite,
         onMediaClick = onMediaClick,
         onSearchClick = onSearchClick,
+        onFavoritesClick = onFavoritesClick,
         onLoadMore = viewModel::loadMore,
         onRetry = viewModel::retry,
     )
@@ -59,6 +62,7 @@ fun MovieListContent(
     onSearchClick: () -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
+    onFavoritesClick: () -> Unit = {},
     favoriteKeys: Set<MediaKey> = emptySet(),
     onToggleFavorite: (MediaSummary) -> Unit = {},
 ) {
@@ -71,6 +75,9 @@ fun MovieListContent(
             TopAppBar(
                 title = { Text(stringResource(R.string.movie_list_title)) },
                 actions = {
+                    IconButton(onClick = onFavoritesClick) {
+                        Icon(Icons.Filled.FavoriteBorder, contentDescription = stringResource(R.string.favorites_title))
+                    }
                     IconButton(onClick = onSearchClick) {
                         Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.action_search))
                     }

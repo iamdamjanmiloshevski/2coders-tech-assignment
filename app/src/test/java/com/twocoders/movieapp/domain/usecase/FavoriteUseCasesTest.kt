@@ -73,4 +73,16 @@ class FavoriteUseCasesTest {
         }
         assertEquals(MediaType.TV_SHOW, TestData.tvShowDetails().toSummary().type)
     }
+
+    @Test
+    fun `removing twice never adds the title back`() = runTest {
+        val remove = RemoveFavoriteUseCase(repository)
+        val movie = TestData.summary(1)
+        toggle(movie)
+
+        remove(movie.key)
+        remove(movie.key)
+
+        assertTrue(observe().first().isEmpty())
+    }
 }
