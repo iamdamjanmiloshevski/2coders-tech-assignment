@@ -7,14 +7,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -24,11 +33,15 @@ import com.twocoders.movieapp.presentation.common.PreviewData
 import com.twocoders.movieapp.presentation.common.iconRes
 import com.twocoders.movieapp.presentation.ui.theme.MovieAppTheme
 
+private val FloatingElevation = 16.dp
+private val PressedElevation = 4.dp
+
 /**
- * One media card: the poster, then the title, a meta line (rating, year) and a short overview.
+ * One floating media card: the poster, then the title, a meta line (rating, year) and a short overview.
  *
- * The card gets a soft shadow plus a hairline border. Shadows barely show on dark surfaces,
- * so the border is what separates the cards in the dark theme.
+ * The card floats on a wide, soft shadow over a lighter surface than the page. When pressed,
+ * it settles toward the page (smaller shadow, slight scale-down). Shadows barely show on dark
+ * surfaces, so in the dark theme a raised tone and a faint border do the lifting instead.
  */
 @Composable
 fun MediaListItem(
@@ -36,15 +49,34 @@ fun MediaListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
+    val isDark = colors.surface.luminance() < 0.5f
+    val shape = MaterialTheme.shapes.large
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val elevation by animateDpAsState(if (pressed) PressedElevation else FloatingElevation, label = "cardElevation")
+    val scale by animateFloatAsState(if (pressed) 0.98f else 1f, label = "cardScale")
+
     Card(
         onClick = onClick,
+        interactionSource = interactionSource,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp, pressedElevation = 1.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            // A large elevation spreads the shadow wide and soft. The platform already makes shadows
+            // translucent (it multiplies the colour's alpha by the theme's shadow alpha), so the
+            // colours stay at the opaque default. A lower alpha here would hide the shadow almost completely.
+            .shadow(elevation = elevation, shape = shape),
+        shape = shape,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) colors.surfaceContainerHigh else colors.surfaceContainerLowest,
+        ),
+        border = if (isDark) BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.5f)) else null,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
