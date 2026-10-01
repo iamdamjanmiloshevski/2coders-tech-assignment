@@ -1,5 +1,6 @@
 package com.twocoders.movieapp.di
 
+import com.twocoders.movieapp.core.connectivity.ConnectivityObserver
 import com.twocoders.movieapp.data.remote.TmdbApi
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.repository.MovieRepository
@@ -11,19 +12,24 @@ import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
 import com.twocoders.movieapp.presentation.details.DetailsViewModel
 import com.twocoders.movieapp.presentation.movies.MovieListViewModel
 import com.twocoders.movieapp.presentation.search.SearchViewModel
+import com.twocoders.movieapp.fakes.FakeConnectivityObserver
 import com.twocoders.movieapp.testutil.MainDispatcherRule
 import org.junit.Assert.assertNotNull
 import org.junit.Rule
 import org.junit.Test
 import org.koin.core.parameter.parametersOf
+import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.core.parameter.parametersOf
+import org.koin.dsl.module
 import org.koin.test.KoinTestRule
 import org.koin.test.get
 
 /**
  * Starts the real production graph and resolves every entry point. A missing binding or
  * a constructor that changed without its module fails here, not at app launch.
+ *
+ * The only replacements are bindings that need an Android `Context`, because a JVM test has none.
  */
 class AppModulesTest : KoinTest {
 
@@ -31,7 +37,7 @@ class AppModulesTest : KoinTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @get:Rule
-    val koinRule = KoinTestRule.create { modules(appModules) }
+    val koinRule = KoinTestRule.create { modules(appModules + androidFreeOverrides) }
 
     @Test
     fun `network and data graph resolves`() {
@@ -54,4 +60,8 @@ class AppModulesTest : KoinTest {
         assertNotNull(get<SearchViewModel>())
         assertNotNull(get<DetailsViewModel> { parametersOf(1, MediaType.MOVIE) })
     }
+}
+
+private val androidFreeOverrides = module {
+    single<ConnectivityObserver> { FakeConnectivityObserver() }
 }
