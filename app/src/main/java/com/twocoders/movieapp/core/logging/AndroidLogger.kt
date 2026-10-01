@@ -2,6 +2,7 @@ package com.twocoders.movieapp.core.logging
 
 import android.util.Log
 
+/** Production [Logger] that writes to Logcat. */
 class AndroidLogger : Logger {
     override fun debug(tag: String, message: String) {
         Log.d(tag, message)

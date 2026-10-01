@@ -68,18 +68,22 @@ class SearchViewModel(
         viewModelScope.launch { connectivity.reconnections().collect { retry() } }
     }
 
+    /** Updates the field immediately. The search itself runs after the debounce. */
     fun onQueryChange(value: String) {
         query.value = value
     }
 
+    /** Switches between movies and TV shows, and searches again right away. */
     fun onMediaTypeChange(type: MediaType) {
         mediaType.value = type
     }
 
+    /** Loads the next page of the current search. Call it when the user scrolls near the end. */
     fun loadMore() {
         activePaginator?.loadNext()
     }
 
+    /** Re-attempts the failed page of the current search. */
     fun retry() {
         activePaginator?.retry()
     }

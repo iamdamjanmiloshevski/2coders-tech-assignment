@@ -41,6 +41,7 @@ class DetailsViewModel(
         }
     }
 
+    /** Loads the details again. Ignored while a load is already running. */
     fun retry() {
         if (loadJob?.isActive == true) return
         load()

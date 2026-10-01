@@ -9,6 +9,7 @@ import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.model.TvShowDetails
 import com.twocoders.movieapp.domain.repository.TvShowRepository
 
+/** TV show details: fetched from TMDB, and served from the Room cache when offline (see [NetworkFirst]). */
 class TvShowRepositoryImpl(
     private val api: TmdbApi,
     private val apiCallHandler: ApiCallHandler,

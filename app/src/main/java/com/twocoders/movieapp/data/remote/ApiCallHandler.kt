@@ -26,6 +26,11 @@ class ApiCallHandler(
     private val logger: Logger,
 ) {
 
+    /**
+     * @param request the Retrofit call to run.
+     * @param map turns a successful body into the value the repository returns. Called only for 2xx with a body.
+     * @return [DataResult.Success] with the mapped value, or [DataResult.Failure] with the matching [AppError].
+     */
     suspend fun <T, R> execute(
         request: suspend () -> Response<T>,
         map: (T) -> R,

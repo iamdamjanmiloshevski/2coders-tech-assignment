@@ -3,6 +3,7 @@ package com.twocoders.movieapp.data.remote.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/** Response of `movie/{id}?append_to_response=credits`. */
 @Serializable
 data class MovieDetailsDto(
     val id: Int,

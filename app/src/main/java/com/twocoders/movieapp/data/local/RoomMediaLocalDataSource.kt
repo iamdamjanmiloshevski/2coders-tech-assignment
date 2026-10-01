@@ -16,6 +16,10 @@ import com.twocoders.movieapp.domain.model.Page
 import com.twocoders.movieapp.domain.model.TvShowDetails
 import java.util.concurrent.TimeUnit
 
+/**
+ * [MediaLocalDataSource] backed by [MovieDatabase]. Saving a search page also prunes searches
+ * older than 7 days, so the cache can't grow without bound.
+ */
 class RoomMediaLocalDataSource(
     private val pageDao: PageDao,
     private val detailsDao: DetailsDao,

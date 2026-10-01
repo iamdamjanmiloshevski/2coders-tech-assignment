@@ -9,6 +9,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
+/** ViewModels. Screens obtain them with `koinViewModel()`. */
 val presentationModule = module {
     viewModelOf(::MovieListViewModel)
     viewModelOf(::SearchViewModel)

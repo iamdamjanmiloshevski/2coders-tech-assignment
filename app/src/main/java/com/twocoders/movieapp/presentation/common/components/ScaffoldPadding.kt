@@ -25,4 +25,5 @@ fun Modifier.paddingExceptBottom(padding: PaddingValues): Modifier {
     )
 }
 
+/** The bottom part of [padding], to use as a list's `contentPadding`. */
 fun bottomContentPadding(padding: PaddingValues) = PaddingValues(bottom = padding.calculateBottomPadding())

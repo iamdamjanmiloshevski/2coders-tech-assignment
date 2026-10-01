@@ -62,6 +62,25 @@ Layers are packages under `com.twocoders.movieapp`. Dependencies only point inwa
 - DI has one Koin module per layer in `di/`, all listed in `appModules`. When you add a binding, `di/AppModulesTest` should resolve it. Bindings that need a `Context` (Room, connectivity) are overridden with fakes there.
 - Package names mirror directories.
 
+## Documentation (KDoc)
+
+Write KDoc where a reader would otherwise have to guess. Skip it where the name and signature already say everything.
+
+- **Always document:**
+  - **Public types:** classes, interfaces, sealed hierarchies and Koin modules. Say what it's for and why it exists.
+  - **Contracts:** what a function promises beyond its signature. For example: returns null when not cached, never throws, `page` is 1-based, ignored while a load runs, or must not be blank.
+  - **Non-obvious decisions and TMDB quirks:** "TMDB sends 0 for unknown", "rankings shift between pages", "a smaller radius so the corners stay concentric". Explain the *why*, not the *what*.
+  - **ViewModel actions and UI state types:** when the UI should call each action, and what each state means.
+- **Don't document:**
+  - self-explanatory DTO fields, colour tokens or trivial getters
+  - `override`s, unless the behaviour differs from the contract
+  - anything a file-level comment already explains
+- **Style:**
+  - One line when that's enough. Reference symbols with `[Name]` so they're navigable.
+  - Use `@param` and `@return` only when they add information.
+  - Use plain `//` comments inside function bodies, for a *why* at the exact line it applies to.
+- **Keep KDoc true:** update it in the same change as the behaviour it describes. Wrong KDoc is worse than none.
+
 ## Testing conventions
 
 - Use hand-written fakes in `app/src/test/.../fakes` (with `TestData` builders) rather than mocks.

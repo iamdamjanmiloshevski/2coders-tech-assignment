@@ -28,6 +28,7 @@ sealed interface MediaDetails {
         }
 }
 
+/** [MediaDetails] of a movie. */
 data class MovieDetails(
     override val id: Int,
     override val title: String,
@@ -48,6 +49,7 @@ data class MovieDetails(
     val revenue: Long?,
 ) : MediaDetails
 
+/** [MediaDetails] of a TV show. */
 data class TvShowDetails(
     override val id: Int,
     override val title: String,

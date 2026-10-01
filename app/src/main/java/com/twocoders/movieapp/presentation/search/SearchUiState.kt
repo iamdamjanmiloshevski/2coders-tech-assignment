@@ -15,6 +15,7 @@ data class SearchUiState(
     val results: SearchResults = SearchResults.Idle,
 )
 
+/** The results area below the search field. */
 sealed interface SearchResults {
     /** No query entered yet. The UI shows a prompt rather than an empty list. */
     data object Idle : SearchResults

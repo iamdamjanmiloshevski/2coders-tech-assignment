@@ -34,7 +34,9 @@ class MovieListViewModel(
     /** Call when the user scrolls near the end of the list. */
     fun loadMore() = paginator.loadNext()
 
+    /** Re-attempts the page that failed. Does nothing unless the last load failed. */
     fun retry() = paginator.retry()
 
+    /** Drops the loaded pages and starts again from the first page. */
     fun refresh() = paginator.refresh()
 }

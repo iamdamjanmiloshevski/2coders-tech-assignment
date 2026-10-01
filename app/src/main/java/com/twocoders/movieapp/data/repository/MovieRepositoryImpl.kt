@@ -14,6 +14,7 @@ import com.twocoders.movieapp.domain.model.MovieDetails
 import com.twocoders.movieapp.domain.model.Page
 import com.twocoders.movieapp.domain.repository.MovieRepository
 
+/** Popular movies and movie details: fetched from TMDB, and served from the Room cache when offline (see [NetworkFirst]). */
 class MovieRepositoryImpl(
     private val api: TmdbApi,
     private val apiCallHandler: ApiCallHandler,

@@ -10,6 +10,12 @@ import com.twocoders.movieapp.data.local.entity.PageEntity
 import com.twocoders.movieapp.data.local.entity.PageItemEntity
 
 @Dao
+/**
+ * Reads and writes cached list pages.
+ *
+ * Public methods are transactions with a domain-sized purpose. The single-statement queries
+ * they're built from are `protected`, so callers can't leave a page half-written.
+ */
 abstract class PageDao {
 
     /** The page's metadata and its titles in order, or null if this page was never cached. */

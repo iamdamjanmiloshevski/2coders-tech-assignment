@@ -35,6 +35,7 @@ import com.twocoders.movieapp.presentation.ui.theme.MovieAppTheme
  * They share one layout so every screen fails, waits and comes up empty in the same way.
  */
 
+/** A centred spinner for when there's nothing to show yet. */
 @Composable
 fun FullScreenLoading(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -42,6 +43,7 @@ fun FullScreenLoading(modifier: Modifier = Modifier) {
     }
 }
 
+/** The user-facing message for [error], with a retry button. Offline errors get their own icon. */
 @Composable
 fun FullScreenError(
     error: AppError,
@@ -58,6 +60,7 @@ fun FullScreenError(
     }
 }
 
+/** Explains why a screen is empty, e.g. no search results yet. */
 @Composable
 fun EmptyState(
     icon: Painter,

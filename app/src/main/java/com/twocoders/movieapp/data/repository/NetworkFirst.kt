@@ -20,6 +20,11 @@ import kotlinx.coroutines.CancellationException
 class NetworkFirst(
     private val logger: Logger,
 ) {
+    /**
+     * @param fetch the network call, usually an [com.twocoders.movieapp.data.remote.ApiCallHandler.execute].
+     * @param saveToCache stores a successful result.
+     * @param loadFromCache the cached copy for the same request, or null if there's none.
+     */
     suspend operator fun <T> invoke(
         fetch: suspend () -> DataResult<T>,
         saveToCache: suspend (T) -> Unit,

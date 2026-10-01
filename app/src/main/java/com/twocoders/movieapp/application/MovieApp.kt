@@ -15,6 +15,10 @@ import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 import okio.Path.Companion.toOkioPath
 
+/**
+ * Process entry point. Starts Koin with [appModules] and provides Coil's app-wide image loader.
+ * Registered in the manifest as `.application.MovieApp`.
+ */
 class MovieApp : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
