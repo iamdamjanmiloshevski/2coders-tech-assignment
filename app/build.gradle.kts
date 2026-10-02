@@ -53,8 +53,11 @@ android {
 
     buildTypes {
         release {
+            // R8: shrinks, optimizes and obfuscates code, and strips unused resources.
+            // Retrofit, OkHttp, Room, Koin and kotlinx.serialization ship their own keep rules.
+            // App-specific rules live in src/main/keepRules/.
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
