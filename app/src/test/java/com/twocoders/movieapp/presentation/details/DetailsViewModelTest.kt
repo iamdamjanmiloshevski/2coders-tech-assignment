@@ -5,7 +5,11 @@ import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.usecase.GetMediaDetailsUseCase
+import com.twocoders.movieapp.domain.model.toSummary
+import com.twocoders.movieapp.domain.usecase.ObserveFavoritesUseCase
+import com.twocoders.movieapp.domain.usecase.ToggleFavoriteUseCase
 import com.twocoders.movieapp.fakes.FakeConnectivityObserver
+import com.twocoders.movieapp.fakes.FakeFavoritesRepository
 import com.twocoders.movieapp.fakes.FakeMovieRepository
 import com.twocoders.movieapp.fakes.FakeTvShowRepository
 import com.twocoders.movieapp.fakes.TestData
@@ -24,9 +28,16 @@ class DetailsViewModelTest {
     private val movieRepository = FakeMovieRepository()
     private val tvShowRepository = FakeTvShowRepository()
     private val connectivity = FakeConnectivityObserver()
+    private val favorites = FakeFavoritesRepository()
 
-    private fun viewModel(id: Int, type: MediaType) =
-        DetailsViewModel(id, type, GetMediaDetailsUseCase(movieRepository, tvShowRepository), connectivity)
+    private fun viewModel(id: Int, type: MediaType) = DetailsViewModel(
+        id,
+        type,
+        GetMediaDetailsUseCase(movieRepository, tvShowRepository),
+        connectivity,
+        ObserveFavoritesUseCase(favorites),
+        ToggleFavoriteUseCase(favorites),
+    )
 
     @Test
     fun `emits Loading then Content for a movie`() = runTest {
@@ -87,5 +98,41 @@ class DetailsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(3), movieRepository.detailsRequests)
+    }
+
+    @Test
+    fun `toggling saves the loaded details as a favorite snapshot`() = runTest {
+        val viewModel = viewModel(id = 9, type = MediaType.TV_SHOW)
+        advanceUntilIdle()
+        assertEquals(false, viewModel.isFavorite.value)
+
+        viewModel.toggleFavorite()
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.isFavorite.value)
+        assertEquals(listOf(TestData.tvShowDetails(9).toSummary()), favorites.current.map { it.media })
+    }
+
+    @Test
+    fun `isFavorite reflects favorites made elsewhere`() = runTest {
+        val viewModel = viewModel(id = 3, type = MediaType.MOVIE)
+        advanceUntilIdle()
+
+        favorites.add(TestData.summary(3, MediaType.MOVIE))
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.isFavorite.value)
+    }
+
+    @Test
+    fun `toggling before the details load does nothing`() = runTest {
+        movieRepository.detailsResult = { DataResult.Failure(AppError.NoConnection) }
+        val viewModel = viewModel(id = 1, type = MediaType.MOVIE)
+        advanceUntilIdle()
+
+        viewModel.toggleFavorite()
+        advanceUntilIdle()
+
+        assertEquals(emptyList<Any>(), favorites.current)
     }
 }

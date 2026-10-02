@@ -1,10 +1,7 @@
 package com.twocoders.movieapp.presentation.details
 
 import androidx.activity.compose.LocalActivity
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -55,6 +52,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -78,6 +76,7 @@ import com.twocoders.movieapp.domain.model.MovieDetails
 import com.twocoders.movieapp.domain.model.Person
 import com.twocoders.movieapp.domain.model.TvShowDetails
 import com.twocoders.movieapp.presentation.common.PreviewData
+import com.twocoders.movieapp.presentation.common.components.FavoriteButton
 import com.twocoders.movieapp.presentation.common.components.FullScreenError
 import com.twocoders.movieapp.presentation.common.components.FullScreenLoading
 import com.twocoders.movieapp.presentation.common.components.PosterImage
@@ -100,7 +99,14 @@ fun DetailsScreen(
     onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    DetailsContent(state = state, onBack = onBack, onRetry = viewModel::retry)
+    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    DetailsContent(
+        state = state,
+        isFavorite = isFavorite,
+        onBack = onBack,
+        onRetry = viewModel::retry,
+        onToggleFavorite = viewModel::toggleFavorite,
+    )
 }
 
 /**
@@ -114,6 +120,8 @@ fun DetailsContent(
     state: DetailsUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    isFavorite: Boolean = false,
+    onToggleFavorite: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -140,6 +148,8 @@ fun DetailsContent(
                 title = (state as? DetailsUiState.Content)?.details?.title,
                 solid = !overBackdrop,
                 onBack = onBack,
+                isFavorite = isFavorite,
+                onToggleFavorite = onToggleFavorite,
             )
             StatusBarIconsEffect(darkIcons = !overBackdrop && !isSystemInDarkTheme())
         }
@@ -174,7 +184,13 @@ private fun DetailsBody(details: MediaDetails, scrollState: ScrollState, backdro
 }
 
 @Composable
-private fun DetailsTopBar(title: String?, solid: Boolean, onBack: () -> Unit) {
+private fun DetailsTopBar(
+    title: String?,
+    solid: Boolean,
+    onBack: () -> Unit,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+) {
     val backgroundAlpha by animateFloatAsState(targetValue = if (solid) 1f else 0f, label = "topBarBackground")
     Row(
         modifier = Modifier
@@ -186,14 +202,31 @@ private fun DetailsTopBar(title: String?, solid: Boolean, onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BackButton(onClick = onBack)
-        AnimatedVisibility(visible = solid && title != null, enter = fadeIn(), exit = fadeOut()) {
+        val titleAlpha by animateFloatAsState(targetValue = if (solid && title != null) 1f else 0f, label = "topBarTitle")
+        if (titleAlpha > 0f) {
             Text(
                 text = title.orEmpty(),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 8.dp, end = 16.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp)
+                    .graphicsLayer { alpha = titleAlpha },
             )
+        } else {
+            // Keeps the heart at the end of the bar while the title is hidden.
+            Spacer(Modifier.weight(1f))
+        }
+        // Only once the details have loaded: they're what gets saved as the favorite.
+        if (title != null) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)) {
+                FavoriteButton(
+                    isFavorite = isFavorite,
+                    onToggle = onToggleFavorite,
+                    offTint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }

@@ -47,6 +47,16 @@
         <item quantity="other">%d seasons</item>
     </plurals>
 
+    <!-- Favorites -->
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty_title">No favorites yet</string>
+    <string name="favorites_empty_message">Tap the heart on any movie or show to keep it here.</string>
+    <!-- %1$s is the title that was removed. -->
+    <string name="favorites_removed">Removed “%1$s”</string>
+    <string name="action_undo">Undo</string>
+
     <!-- Connectivity -->
     <string name="offline_banner">You\'re offline · showing saved content</string>
 

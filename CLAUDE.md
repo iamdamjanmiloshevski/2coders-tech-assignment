@@ -44,6 +44,15 @@ Layers are packages under `com.twocoders.movieapp`. Dependencies only point inwa
   - Room stays behind `MediaLocalDataSource`, with entities, DAOs and mappers in `data/local`. Repository tests use `FakeMediaLocalDataSource`.
   - Schema changes: bump `MovieDatabase.version` and commit the new `app/schemas/*.json`. The database is a cache, so a version change rebuilds it.
   - Room queries are tested on a device (`connectedDebugAndroidTest`). The JVM tests don't run Room.
+- **Two databases, two lifecycles:**
+  - **`MovieDatabase` (`movie_cache.db`):** a disposable TMDB cache. Destructive migration is fine, and it's excluded from backup.
+  - **`UserDatabase` (`user_data.db`, `data/local/user`):** user data, currently favorites.
+  - **Never add `fallbackToDestructiveMigration` to `UserDatabase`.** Every version bump needs a `Migration` or `@AutoMigration`, plus the new exported schema in `app/schemas/`.
+  - Never put user data in the cache database.
+- **Favorites:**
+  - Keyed by `MediaKey(id, type)`. Never by id alone.
+  - List ViewModels get hearts through `FavoritesDelegate`, and cards through `PaginatedMediaList(favoriteKeys, onToggleFavorite)`.
+  - Use `RemoveFavoriteUseCase` (not toggle) wherever removal offers Undo.
   - Connectivity goes through `ConnectivityObserver`. ViewModels use `reconnections()` to retry, and tests use `FakeConnectivityObserver`.
 - DTOs (`data/remote/dto`) never leave the data layer. Mappers in `data/mapper` produce domain models, and `ImageUrlBuilder` builds image URLs.
 - `presentation/` has one package per screen (ViewModel, UI state, Screen). Each ViewModel exposes a single `StateFlow`. Screen content and operation status are separate types: for example `PaginationState.items` vs the sealed `PaginationStatus`, or the sealed `DetailsUiState`.

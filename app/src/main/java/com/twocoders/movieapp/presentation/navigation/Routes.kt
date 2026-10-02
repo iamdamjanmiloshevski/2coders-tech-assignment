@@ -16,6 +16,10 @@ data object MovieListRoute
 @Serializable
 data object SearchRoute
 
+/** The user's saved movies and shows. */
+@Serializable
+data object FavoritesRoute
+
 /** Details of one title. [type] matters because TMDB ids are only unique within a media type. */
 @Serializable
 data class DetailsRoute(val id: Int, val type: MediaType)

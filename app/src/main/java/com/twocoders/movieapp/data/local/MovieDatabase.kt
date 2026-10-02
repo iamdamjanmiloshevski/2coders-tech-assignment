@@ -14,6 +14,9 @@ import com.twocoders.movieapp.data.local.entity.PageItemEntity
  * Offline cache of TMDB content: list pages and details. It's only a cache, never the source of
  * truth, so a schema change can rebuild it from scratch instead of migrating (see `LocalModule`).
  * The schema is still exported to `app/schemas`, so changes show up in review.
+ *
+ * User data never goes here. Favorites live in [com.twocoders.movieapp.data.local.user.UserDatabase],
+ * which is never wiped.
  */
 @Database(
     entities = [MediaEntity::class, PageEntity::class, PageItemEntity::class, DetailsEntity::class],
