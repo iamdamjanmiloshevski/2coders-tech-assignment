@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MovieApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MovieApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!--
+        Launch theme for the AndroidX SplashScreen API: native on Android 12+ and backported below.
+        Splash and app share one background colour, so the hand-off to the first frame is seamless.
+        MainActivity calls installSplashScreen(), which switches to postSplashScreenTheme.
+    -->
+    <style name="Theme.MovieApp.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.MovieApp</item>
+    </style>
 </resources>

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Android app for the 2Coders Studio tech assignment, backed by the TMDB API. It has three screens: popular movies (infinite scroll), details, and debounced search over movies or TV series. It's a single `:app` module that follows Clean Architecture, MVVM and the Repository pattern, with Compose, Navigation Compose, Koin and Retrofit. `README.md` explains the design decisions and `docs/runbooks/tmdb.md` covers TMDB specifics. Read both before changing architecture or networking.
 
-Status: the architecture, data layer, ViewModels and tests are done. The screens in `presentation/*/…Screen.kt` are minimal placeholders wired to their ViewModels. The finished UI should replace their bodies but keep their signatures (a ViewModel plus navigation callbacks).
+Status: the architecture (branch `feature/architecture`) and the Compose UI (branch `feature/ui`) are both done. The README "UI" section explains the visual design.
 
 ## Commands
 
@@ -27,7 +27,7 @@ The build **fails at configuration** if `tmdb.properties` (repo root, gitignored
 ## Toolchain (bleeding edge, check before assuming APIs)
 
 - AGP 9.4.1 with Gradle 9.6.0. Kotlin support is built into AGP 9, so there is no `kotlin-android` plugin, only the Compose and serialization compiler plugins (Kotlin 2.2.10).
-- **Kotlin is pinned at 2.2.10.** Libraries are chosen to match: kotlinx-serialization 1.9.0, coroutines 1.10.2, Koin 4.1.1. Newer releases may need Kotlin 2.3+ metadata, so bump Kotlin first if you upgrade them.
+- **Kotlin is pinned at 2.2.10.** Libraries are chosen to match: kotlinx-serialization 1.9.0, coroutines 1.10.2, Koin 4.1.1, Coil 3.4.0. The 2.2 compiler reads metadata up to 2.3, and newer releases (for example Coil 3.5+) pull kotlin-stdlib 2.4 and fail with "incompatible version of Kotlin". Bump Kotlin first if you upgrade them.
 - The daemon JVM is toolchain 25 (foojay). App bytecode targets Java 11. compileSdk/targetSdk are 37 and minSdk is 24.
 - The configuration cache is on. Build logic must read files through `providers` (see how `tmdb.properties` is loaded).
 - R8 keep rules go in `app/src/main/keepRules/` (the AGP 9 convention). Release optimization is currently off.
@@ -44,6 +44,16 @@ Layers are packages under `com.twocoders.movieapp`. Dependencies only point inwa
 - `presentation/` has one package per screen (ViewModel, UI state, Screen). Each ViewModel exposes a single `StateFlow`. Screen content and operation status are separate types: for example `PaginationState.items` vs the sealed `PaginationStatus`, or the sealed `DetailsUiState`.
 - Lists paginate with `presentation/paging/Paginator`. It's a hand-written state machine, not Paging 3. Use it for any new paginated list.
 - Screens get the ViewModel and navigation callbacks, never the `NavController`. Routes are `@Serializable` types in `presentation/navigation/Routes.kt`. Route args reach ViewModels through Koin `parametersOf`, not `SavedStateHandle`.
+- **UI conventions:**
+  - Each screen is a stateful `XScreen(viewModel, callbacks)` that collects state and delegates to a stateless `XContent(state, callbacks)`.
+  - Previews (`@PreviewLightDark`) target `XContent`, using `presentation/common/PreviewData`.
+  - Reuse `presentation/common/components`: `PaginatedMediaList` for any paginated media, `PosterImage` for every remote image, and `FullScreenError`/`EmptyState` for those states.
+  - Text goes in `strings.xml`. Map errors with `AppError.toMessage()`. Formatting lives in `Formatters.kt`, as pure functions with tests.
+  - Colours come only from `MaterialTheme.colorScheme`, which is the brand palette in `ui/theme/Color.kt`. Dynamic colour is off on purpose.
+  - Edge-to-edge: list bottom insets go into `contentPadding` (`bottomContentPadding`/`paddingExceptBottom`). Search adds the IME to the Scaffold insets.
+  - **Splash:** use the AndroidX SplashScreen API only (`Theme.MovieApp.Starting` and `installSplashScreen()` before `super.onCreate`). Never add a splash Activity or a splash composable.
+  - **Portrait:** the activity is locked to portrait, but Android 16+ ignores that on large screens, so keep layouts working in landscape.
+  - Icons come from `material-icons-core`. Anything outside that set is a vector drawable in `res/drawable`, so don't add `material-icons-extended`.
 - DI has one Koin module per layer in `di/`, all listed in `appModules`. When you add a binding, `di/AppModulesTest` should resolve it.
 - Package names mirror directories.
 

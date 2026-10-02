@@ -14,10 +14,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MovieApp">
+        <!--
+            Portrait only, by product decision. From Android 16, apps targeting API 36+ have this
+            lock ignored on large screens (smallest width >= 600dp, e.g. tablets and unfolded
+            foldables), so the layouts must still work in landscape. Phones honour the lock.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.MovieApp"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity"
+            android:theme="@style/Theme.MovieApp.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

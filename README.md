@@ -8,7 +8,11 @@ An Android app that browses movies and TV shows from [The Movie Database (TMDB)]
 | **Details** | Extended information: rating, vote count, genres, runtime/seasons, directors/creators, writers and cast |
 | **Search** | Debounced search over **movies or TV series**, chosen before searching, with paginated results |
 
-Built with Kotlin, Jetpack Compose, Navigation Compose, Koin, Retrofit, kotlinx.serialization and coroutines/Flow.
+Built with Kotlin, Jetpack Compose, Navigation Compose, Koin, Retrofit, kotlinx.serialization, Coil and coroutines/Flow.
+
+| Movies (dark) | Search (light) | Details | Details, scrolled |
+|---|---|---|---|
+| <img src="docs/screenshots/movie-list-dark.png" width="200"/> | <img src="docs/screenshots/search-light.png" width="200"/> | <img src="docs/screenshots/details-light.png" width="200"/> | <img src="docs/screenshots/details-tv-scrolled.png" width="200"/> |
 
 ---
 
@@ -67,11 +71,12 @@ com.twocoders.movieapp
 │   └── repository      repository implementations
 ├── presentation
 │   ├── paging          PaginationState (state machine) + Paginator
+│   ├── common          shared components, error messages, formatters
 │   ├── movies | details | search   one package per screen: ViewModel, UI state, Screen
 │   ├── navigation      type-safe routes + AppNavHost
 │   └── ui/theme
 ├── di                  Koin modules (core, network, data, domain, presentation)
-├── MovieApp.kt         Application, starts Koin
+├── application/MovieApp.kt   Application, starts Koin
 └── MainActivity.kt     single Activity
 ```
 
@@ -148,15 +153,48 @@ TMDB sometimes sends `null` where a list is expected. `TmdbJson` sets `coerceInp
 
 ---
 
+## UI
+
+Jetpack Compose only, with Material 3. There was no design to follow, so the goal was simple and calm: let the posters carry the colour, and keep the UI out of the way.
+
+- **Splash screen.** It uses the AndroidX SplashScreen API (`installSplashScreen()` in `MainActivity` and `Theme.MovieApp.Starting`), so there's no separate splash Activity or composable. The splash is native on Android 12+ and backported below. Its background matches the app background in both themes, so the hand-off is seamless.
+- **Edge-to-edge and portrait.** Edge-to-edge is on everywhere. It's enforced from targetSdk 35, and `enableEdgeToEdge()` gives older versions the same look. The app is locked to portrait, but Android 16+ ignores the lock on large screens, so layouts still work in landscape.
+- **Brand theme.** A warm amber accent on neutral surfaces, with full light and dark colour schemes. Dynamic colour is turned off on purpose, so every reviewer sees the same app. The window background matches the Compose background, so there's no colour flash at launch.
+- **Movies.** Each title is a floating card with a poster, title, ★ rating, year and a 3-line overview. In light theme the cards are white on the warm page, with a wide, soft shadow. In dark theme they use a raised tone and a faint border, because shadows don't show on dark surfaces. Pressing a card makes it settle toward the page.
+- **Search.**
+  - The search field sits in the top bar and gets focus on first entry, with a clear button.
+  - A segmented **Movies / TV series** selector chooses what to search.
+  - The layout accounts for the keyboard, and the keyboard hides once you scroll the results.
+- **Details.**
+  - A 16:9 backdrop behind the status bar fades into the page, with the poster overlapping its edge.
+  - Below it: the rating with vote count, genre pills, overview, directors or creators, writers, a cast row, and per-type facts (budget and revenue, or seasons and episodes).
+  - The top bar turns solid and shows the title once the backdrop scrolls away. The status bar icons switch colour to stay legible.
+- **Every state is designed.** First-page loading and errors take the full screen and offer a retry. A failed next page shows an inline retry footer under the items that already loaded. There are empty states for "no results" and for search before anything is typed. Every error message is short and actionable. For example: *"You're offline. Check your connection and try again."*
+
+### How the UI is built
+- **Stateful screen, stateless content.** For example, `MovieListScreen(viewModel, …)` collects the state and passes it to `MovieListContent(state, callbacks)`. The content takes plain values only, so `@PreviewLightDark` can render it with `PreviewData`.
+- **`PaginatedMediaList`** is shared by the movie feed and the search results. It maps a `PaginationState` to the full-screen states, keyed rows and the footer.
+- **Infinite scroll.** A `snapshotFlow` over the list layout calls `loadMore()` when the user is 5 rows from the end. It emits the item count rather than a boolean, so a short page triggers the next load again. `Paginator` ignores duplicate calls, so the list can call `loadMore()` freely.
+- **Edge-to-edge.** Lists draw behind the navigation bar, and their bottom inset goes into `contentPadding`. On the search screen, the Scaffold's insets include the IME.
+- **Images.** Coil 3 loads every image through `PosterImage`, which shows a tinted placeholder with a type icon. That one placeholder covers loading, missing artwork and failures. Coil uses its own HTTP client, so the TMDB token is never sent to the image CDN.
+- **Accessibility.**
+  - The rating reads as "Rated 8.2 out of 10".
+  - Headings are marked as headings, decorative images are skipped, and icon buttons have labels.
+  - Text uses `maxLines` and ellipsis instead of fixed heights, so it handles large font sizes.
+- **Display formatting.** Rating, compact vote counts (`30.2K`), runtime (`2h 19m`) and money (`$225M`) are pure functions in `Formatters.kt`, and they're unit-tested.
+- **Text.** All text is in `strings.xml`, including plurals.
+
+---
+
 ## Testing
 
-There are 50 JVM unit tests under `app/src/test`. Their packages mirror the main source set:
+There are 55 JVM unit tests under `app/src/test`. Their packages mirror the main source set:
 
 | Layer | What's covered | How |
 |---|---|---|
 | domain | use cases: dispatch by type, blank-query short-circuit, trimming | hand-written fake repositories (`fakes/`) |
 | data | every `AppError` mapping, the auth header, `null` handling, mapping (credits, image URLs, 500-page clamp), endpoint paths | **MockWebServer** with the real Retrofit + `TmdbJson` stack (`TmdbServerRule`) |
-| presentation | pagination state transitions, `Paginator` concurrency, each ViewModel; for search: debounce, cancelling stale requests, type switch | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
+| presentation | pagination state transitions, `Paginator` concurrency, each ViewModel (for search: debounce, cancelling stale requests, type switch), display formatters | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
 | di | the full Koin graph resolves | `KoinTestRule` |
 
 Fakes are preferred over mocks. They record their calls and answer from a lambda the test can swap, which keeps assertions readable.
