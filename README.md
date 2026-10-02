@@ -1,21 +1,25 @@
 # MovieApp — 2Coders Studio tech assignment
 
-An Android app that browses movies and TV shows from [The Movie Database (TMDB)](https://developer.themoviedb.org/docs/getting-started). It has three screens:
+An Android app that browses movies and TV shows from [The Movie Database (TMDB)](https://developer.themoviedb.org/docs/getting-started). It covers the three required screens, plus both optional features: favorites and offline mode.
 
 | Screen | What it does |
 |---|---|
 | **Movies** | Endless list of popular movies, each showing a title, poster and short description |
 | **Details** | Extended information: rating, vote count, genres, runtime/seasons, directors/creators, writers and cast |
 | **Search** | Debounced search over **movies or TV series**, chosen before searching, with paginated results |
-| **Favorites** | Movies and shows the user saved with the heart, newest first, available offline |
+| **Favorites** *(optional)* | Movies and shows the user saved with the heart, newest first, with Undo on removal |
 
-Everything you've already seen keeps working **offline**: the movie list, details, posters and past searches. See [Offline support](#offline-support).
+*(Optional)* Everything you've already seen keeps working **offline**: the movie list, details, posters, past searches and favorites. See [Offline support](#offline-support).
 
 Built with Kotlin, Jetpack Compose, Navigation Compose, Koin, Retrofit, kotlinx.serialization, Coil and coroutines/Flow.
 
-| Movies (dark) | Search (light) | Details | Details, scrolled |
+| Splash | Movies (dark) | Movies (light) | Details |
 |---|---|---|---|
-| <img src="docs/screenshots/movie-list-dark.png" width="200"/> | <img src="docs/screenshots/search-light.png" width="200"/> | <img src="docs/screenshots/details-light.png" width="200"/> | <img src="docs/screenshots/details-tv-scrolled.png" width="200"/> |
+| <img src="docs/screenshots/splash.png" width="200"/> | <img src="docs/screenshots/movie-list-dark.png" width="200"/> | <img src="docs/screenshots/movie-list-light.png" width="200"/> | <img src="docs/screenshots/details.png" width="200"/> |
+
+| Details, scrolled | Search | Favorites | Offline banner |
+|---|---|---|---|
+| <img src="docs/screenshots/details-scrolled.png" width="200"/> | <img src="docs/screenshots/search.png" width="200"/> | <img src="docs/screenshots/favorites.png" width="200"/> | <img src="docs/screenshots/offline-banner.png" width="200"/> |
 
 ---
 
@@ -46,6 +50,7 @@ Built with Kotlin, Jetpack Compose, Navigation Compose, Koin, Retrofit, kotlinx.
 ./gradlew lintDebug              # Android lint
 ./gradlew connectedDebugAndroidTest   # Room tests on a device or emulator
 ./gradlew assembleDebug          # build the APK
+./gradlew assembleRelease        # R8-optimized release APK (unsigned)
 ```
 
 ---
@@ -65,10 +70,10 @@ Clean Architecture in one `:app` module. The layers are packages, and dependenci
 com.twocoders.movieapp
 ├── core                logging, connectivity (ConnectivityObserver), time (Clock)
 ├── domain              no Android, Retrofit or serialization imports
-│   ├── model           MediaSummary, MediaDetails (sealed), Credits, Page<T>, …
+│   ├── model           MediaSummary, MediaDetails (sealed), Credits, Page<T>, MediaKey, Favorite, …
 │   ├── error           AppError (sealed), DataResult<T>
 │   ├── repository      repository interfaces
-│   └── usecase         GetPopularMovies, GetMediaDetails, SearchMedia
+│   └── usecase         GetPopularMovies, GetMediaDetails, SearchMedia, favorites (observe, toggle, remove, restore)
 ├── data
 │   ├── remote          TmdbApi, AuthInterceptor, ApiCallHandler, TmdbJson, dto/
 │   ├── local           Room cache: MovieDatabase, entities, DAOs, MediaLocalDataSource
@@ -84,7 +89,7 @@ com.twocoders.movieapp
 │   ├── app             MovieAppRoot: nav graph + app-wide overlays
 │   ├── navigation      type-safe routes + AppNavHost
 │   └── ui/theme
-├── di                  Koin modules (core, network, local, data, domain, presentation)
+├── di                  Koin modules (core, network, local, userData, data, domain, presentation)
 ├── application/MovieApp.kt   Application, starts Koin
 └── MainActivity.kt     single Activity
 ```
@@ -98,7 +103,7 @@ com.twocoders.movieapp
 ## Design decisions
 
 ### MVVM with state machines
-Every screen exposes **one `StateFlow`** of immutable state, and the UI is a function of that state.
+Each screen's content comes from **one `StateFlow`** of immutable state, and the UI is a function of that state. Anything that changes on its own schedule gets a separate flow instead of being mixed in: favorite hearts (`favoriteKeys`, `isFavorite`), and one-off events such as the Undo snackbar (a `Channel`).
 
 - **Lists** use `PaginationState<T>`, which has two parts: the screen content (`items`) and the state of the load operation (`status`, a sealed `PaginationStatus`).
   - `status` moves through `Idle → LoadingFirstPage/LoadingNextPage → Idle | EndReached | Error`.
@@ -106,6 +111,7 @@ Every screen exposes **one `StateFlow`** of immutable state, and the UI is a fun
   - The transitions are pure functions, so they're unit-tested directly. A diagram is in the KDoc of `PaginationState`.
 - **Details** uses a sealed `DetailsUiState`: `Loading`, `Content` or `Error`.
 - **Search** uses `SearchUiState`, made of the query text, the media type, and a sealed `SearchResults` (`Idle` or `Content`).
+- **Favorites** uses a sealed `FavoritesUiState` (`Loading`, `Empty` or `Content`), plus `FavoritesEvent.Removed` for the snackbar.
 
 ### Pagination without Paging 3
 The assignment asks for state machines, and owning the paginator keeps that logic visible and testable. Paging 3 would hide load state inside `LazyPagingItems`. `Paginator` is about 70 lines and handles the cases that matter:
@@ -127,6 +133,8 @@ The assignment asks for state machines, and owning the paginator keeps that logi
 - `MediaDetails` is a **sealed interface** with two variants, `MovieDetails` (runtime, budget, revenue) and `TvShowDetails` (seasons, episodes). The UI renders the shared fields once and uses an exhaustive `when` for the extras.
 - `Credits` arrives already split into cast, directors and writers. For TV shows, the creators take the place of directors.
 - The data layer normalises unknown values to `null`: TMDB sends `0` for an unknown budget or revenue, and blank strings for a missing tagline or date.
+- `MediaKey(id, type)` identifies a title wherever titles are tracked, because TMDB ids are only unique within a media type. A `Favorite` is a `MediaSummary` snapshot plus the time it was added.
+- Each layer has its own models: DTOs (`data/remote/dto`), Room entities (`data/local`) and domain models. Mappers convert at each boundary, so a TMDB field change or a schema change stays inside the data layer.
 
 ### Error handling
 `ApiCallHandler` is the single place where Retrofit outcomes become a `DataResult<T>`:
@@ -159,6 +167,21 @@ TMDB sometimes sends `null` where a list is expected. `TmdbJson` sets `coerceInp
 - Credentials live only in the gitignored `tmdb.properties` and reach the app through `BuildConfig`.
 - The read access token is sent as a `Bearer` header, so it's never in URLs.
 - The OkHttp logger runs in debug builds only, and always redacts `Authorization`.
+- Release builds are shrunk and obfuscated with R8.
+
+### Performance and resources
+- **R8 in release:** it shrinks, optimizes and obfuscates the code, and strips unused resources, taking the release APK from 10.8 MB to 2.0 MB. The libraries ship their own keep rules. The only app rule (in `src/main/keepRules/`) keeps `MediaType`, which navigation serializes by name.
+- **Network:** search waits for typing to pause and cancels outdated requests. The list prefetches the next page before the user reaches the end. Pages are cached in Room, and images in Coil's memory cache and 100 MB disk cache.
+- **Compose:**
+  - Lists use stable keys and `contentType`.
+  - Expensive inputs go through `derivedStateOf` (for example the details top bar collapses only when its threshold is crossed) or `snapshotFlow` (the infinite-scroll trigger).
+  - State is collected with `collectAsStateWithLifecycle`, so nothing updates in the background.
+- **Resources:**
+  - All text is in `strings.xml`.
+  - Icons and launcher icons are vectors, with no bitmap exports per density.
+  - Coroutines are scoped to `viewModelScope` or flows, so they're cancelled with their screen.
+  - Network callbacks are unregistered when nobody listens.
+  - The re-downloadable cache is excluded from Auto Backup.
 
 ---
 
@@ -169,7 +192,7 @@ Jetpack Compose only, with Material 3. There was no design to follow, so the goa
 - **Splash screen.** It uses the AndroidX SplashScreen API (`installSplashScreen()` in `MainActivity` and `Theme.MovieApp.Starting`), so there's no separate splash Activity or composable. The splash is native on Android 12+ and backported below. Its background matches the app background in both themes, so the hand-off is seamless.
 - **Edge-to-edge and portrait.** Edge-to-edge is on everywhere. It's enforced from targetSdk 35, and `enableEdgeToEdge()` gives older versions the same look. The app is locked to portrait, but Android 16+ ignores the lock on large screens, so layouts still work in landscape.
 - **Brand theme.** A warm amber accent on neutral surfaces, with full light and dark colour schemes. Dynamic colour is turned off on purpose, so every reviewer sees the same app. The window background matches the Compose background, so there's no colour flash at launch.
-- **Movies.** Each title is a floating card with a poster, title, ★ rating, year and a 3-line overview. In light theme the cards are white on the warm page, with a wide, soft shadow. In dark theme they use a raised tone and a faint border, because shadows don't show on dark surfaces. Pressing a card makes it settle toward the page.
+- **Movies.** Each title is a floating card with a poster, title, ★ rating, year, a 3-line overview and a favorite heart. In light theme the cards are white on the warm page, with a wide, soft shadow. In dark theme they use a raised tone and a faint border, because shadows don't show on dark surfaces. Pressing a card makes it settle toward the page.
 - **Search.**
   - The search field sits in the top bar and gets focus on first entry, with a clear button.
   - A segmented **Movies / TV series** selector chooses what to search.
@@ -178,11 +201,11 @@ Jetpack Compose only, with Material 3. There was no design to follow, so the goa
   - A 16:9 backdrop behind the status bar fades into the page, with the poster overlapping its edge.
   - Below it: the rating with vote count, genre pills, overview, directors or creators, writers, a cast row, and per-type facts (budget and revenue, or seasons and episodes).
   - The top bar turns solid and shows the title once the backdrop scrolls away. The status bar icons switch colour to stay legible.
-- **Every state is designed.** First-page loading and errors take the full screen and offer a retry. A failed next page shows an inline retry footer under the items that already loaded. There are empty states for "no results" and for search before anything is typed. Every error message is short and actionable. For example: *"You're offline. Check your connection and try again."*
+- **Every state is designed.** First-page loading and errors take the full screen and offer a retry. A failed next page shows an inline retry footer under the items that already loaded. There are empty states for "no results", for search before anything is typed, and for an empty favorites list. Every error message is short and actionable. For example: *"You're offline and this isn't saved on your device yet. Connect to the internet and try again."*
 
 ### How the UI is built
 - **Stateful screen, stateless content.** For example, `MovieListScreen(viewModel, …)` collects the state and passes it to `MovieListContent(state, callbacks)`. The content takes plain values only, so `@PreviewLightDark` can render it with `PreviewData`.
-- **`PaginatedMediaList`** is shared by the movie feed and the search results. It maps a `PaginationState` to the full-screen states, keyed rows and the footer.
+- **`PaginatedMediaList`** is shared by the movie feed and the search results. It maps a `PaginationState` to the full-screen states, keyed rows and the footer. The full-screen states are centred above the navigation bar, or above the keyboard on search.
 - **Infinite scroll.** A `snapshotFlow` over the list layout calls `loadMore()` when the user is 5 rows from the end. It emits the item count rather than a boolean, so a short page triggers the next load again. `Paginator` ignores duplicate calls, so the list can call `loadMore()` freely.
 - **Edge-to-edge.** Lists draw behind the navigation bar, and their bottom inset goes into `contentPadding`. On the search screen, the Scaffold's insets include the IME.
 - **Images.** Coil 3 loads every image through `PosterImage`, which shows a tinted placeholder with a type icon. That one placeholder covers loading, missing artwork and failures. Coil uses its own HTTP client, so the TMDB token is never sent to the image CDN.
@@ -210,7 +233,7 @@ The goal is that users can't tell they're offline for anything they've already s
                  └───────────────┘  missing ──► "You're offline and this isn't saved yet"
 ```
 
-- **Strategy: network first, cache fallback.** All three repositories go through one helper, `NetworkFirst`.
+- **Strategy: network first, cache fallback.** All three TMDB repositories (movies, TV shows, search) go through one helper, `NetworkFirst`. Favorites are local-only, so they never touch the network.
   - When online, every response is saved to Room and returned, so the cache always has the latest data the user saw.
   - When the fetch fails with `NoConnection`, the cached copy is returned.
   - Any other error (401, 404, 5xx, parsing) is passed through, so stale data never hides a real failure.
@@ -257,7 +280,7 @@ There are 103 JVM unit tests under `app/src/test`, plus 11 instrumented Room tes
 
 | Layer | What's covered | How |
 |---|---|---|
-| domain | use cases: dispatch by type, blank-query short-circuit, trimming | hand-written fake repositories (`fakes/`) |
+| domain | use cases: dispatch by type, blank-query short-circuit, trimming; favorites (toggle, remove twice, restore position, same id across media types) | hand-written fake repositories (`fakes/`) |
 | data | every `AppError` mapping, the auth header, `null` handling, mapping (credits, image URLs, 500-page clamp), endpoint paths; `NetworkFirst` rules and an offline case per repository; cache mappers and converters | **MockWebServer** with the real Retrofit + `TmdbJson` stack (`TmdbServerRule`; going offline stops the server); `FakeMediaLocalDataSource` |
 | data (device) | cache: page order, replacement, titles shared across lists, search pruning, details round-trips; favorites: newest-first order, live `Flow` updates, upsert, same id across media types | in-memory Room, `./gradlew connectedDebugAndroidTest` |
 | presentation | pagination state transitions, `Paginator` concurrency, each ViewModel (for search: debounce, cancelling stale requests, type switch), auto-retry on reconnect, offline banner timing, favorites (toggle, delegate, Removed event, undo position), display formatters | fakes + `MainDispatcherRule` + virtual time (`advanceTimeBy`), Turbine for emission order |
@@ -270,4 +293,5 @@ Fakes are preferred over mocks. They record their calls and answer from a lambda
 ## Further documentation
 
 - [`docs/runbooks/tmdb.md`](docs/runbooks/tmdb.md): TMDB integration runbook (credentials, gotchas, common errors, offline cache).
+- [`CLAUDE.md`](CLAUDE.md): condensed architecture rules and conventions for contributors, including AI assistants.
 - KDoc on public types explains the reasoning behind decisions, not only what the code does.
