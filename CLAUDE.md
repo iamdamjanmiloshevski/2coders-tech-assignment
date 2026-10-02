@@ -15,7 +15,7 @@ Status: the architecture (branch `feature/architecture`) and the Compose UI (bra
 ./gradlew installDebug                       # install on connected device/emulator
 ./gradlew testDebugUnitTest                  # all JVM unit tests (app/src/test)
 ./gradlew lintDebug                          # Android lint
-./gradlew connectedAndroidTest               # instrumented tests, needs a device
+./gradlew connectedDebugAndroidTest          # Room instrumented tests, needs a device (MIUI phones must allow USB installs)
 
 # single test class / method
 ./gradlew :app:testDebugUnitTest --tests "com.twocoders.movieapp.presentation.search.SearchViewModelTest"
@@ -40,6 +40,11 @@ Layers are packages under `com.twocoders.movieapp`. Dependencies only point inwa
 - `domain/` is **pure Kotlin**. It must not import Android, Retrofit or kotlinx.serialization. For example, the R8 rule for `MediaType` lives in `keepRules/` instead of a `@Keep` annotation. Repositories are interfaces here.
 - `data/` implements the repositories. Every network call goes through `ApiCallHandler.execute(request, map)`, which returns `DataResult<T>`. Don't catch exceptions in repositories or ViewModels. Add new failure kinds to the sealed `AppError` instead.
 - `TmdbApi` methods return `Response<T>`, so the status is checked before anything is decoded. DTO lists default to `emptyList()`, and the shared `TmdbJson` (`coerceInputValues`, `explicitNulls = false`) handles TMDB's nulls.
+- **Offline:** repositories wrap every fetch in `NetworkFirst(fetch, saveToCache, loadFromCache)`. Never read the cache before the network, and never fall back for anything but `AppError.NoConnection`.
+  - Room stays behind `MediaLocalDataSource`, with entities, DAOs and mappers in `data/local`. Repository tests use `FakeMediaLocalDataSource`.
+  - Schema changes: bump `MovieDatabase.version` and commit the new `app/schemas/*.json`. The database is a cache, so a version change rebuilds it.
+  - Room queries are tested on a device (`connectedDebugAndroidTest`). The JVM tests don't run Room.
+  - Connectivity goes through `ConnectivityObserver`. ViewModels use `reconnections()` to retry, and tests use `FakeConnectivityObserver`.
 - DTOs (`data/remote/dto`) never leave the data layer. Mappers in `data/mapper` produce domain models, and `ImageUrlBuilder` builds image URLs.
 - `presentation/` has one package per screen (ViewModel, UI state, Screen). Each ViewModel exposes a single `StateFlow`. Screen content and operation status are separate types: for example `PaginationState.items` vs the sealed `PaginationStatus`, or the sealed `DetailsUiState`.
 - Lists paginate with `presentation/paging/Paginator`. It's a hand-written state machine, not Paging 3. Use it for any new paginated list.
@@ -54,13 +59,32 @@ Layers are packages under `com.twocoders.movieapp`. Dependencies only point inwa
   - **Splash:** use the AndroidX SplashScreen API only (`Theme.MovieApp.Starting` and `installSplashScreen()` before `super.onCreate`). Never add a splash Activity or a splash composable.
   - **Portrait:** the activity is locked to portrait, but Android 16+ ignores that on large screens, so keep layouts working in landscape.
   - Icons come from `material-icons-core`. Anything outside that set is a vector drawable in `res/drawable`, so don't add `material-icons-extended`.
-- DI has one Koin module per layer in `di/`, all listed in `appModules`. When you add a binding, `di/AppModulesTest` should resolve it.
+- DI has one Koin module per layer in `di/`, all listed in `appModules`. When you add a binding, `di/AppModulesTest` should resolve it. Bindings that need a `Context` (Room, connectivity) are overridden with fakes there.
 - Package names mirror directories.
+
+## Documentation (KDoc)
+
+Write KDoc where a reader would otherwise have to guess. Skip it where the name and signature already say everything.
+
+- **Always document:**
+  - **Public types:** classes, interfaces, sealed hierarchies and Koin modules. Say what it's for and why it exists.
+  - **Contracts:** what a function promises beyond its signature. For example: returns null when not cached, never throws, `page` is 1-based, ignored while a load runs, or must not be blank.
+  - **Non-obvious decisions and TMDB quirks:** "TMDB sends 0 for unknown", "rankings shift between pages", "a smaller radius so the corners stay concentric". Explain the *why*, not the *what*.
+  - **ViewModel actions and UI state types:** when the UI should call each action, and what each state means.
+- **Don't document:**
+  - self-explanatory DTO fields, colour tokens or trivial getters
+  - `override`s, unless the behaviour differs from the contract
+  - anything a file-level comment already explains
+- **Style:**
+  - One line when that's enough. Reference symbols with `[Name]` so they're navigable.
+  - Use `@param` and `@return` only when they add information.
+  - Use plain `//` comments inside function bodies, for a *why* at the exact line it applies to.
+- **Keep KDoc true:** update it in the same change as the behaviour it describes. Wrong KDoc is worse than none.
 
 ## Testing conventions
 
 - Use hand-written fakes in `app/src/test/.../fakes` (with `TestData` builders) rather than mocks.
-- Data-layer tests use `TmdbServerRule`, which runs MockWebServer with the real Retrofit + `TmdbJson` stack.
+- Data-layer tests use `TmdbServerRule`, which runs MockWebServer with the real Retrofit + `TmdbJson` stack. To simulate offline, call `goOffline()`, which stops the server. A single `DISCONNECT_AT_START` gets retried by OkHttp on a pooled connection.
 - ViewModel tests use `testutil/MainDispatcherRule` (StandardTestDispatcher). `runTest` shares its scheduler, so `advanceTimeBy` also drives debounce timers.
 - Don't pass `backgroundScope` to a `Paginator` in tests: `advanceUntilIdle()` doesn't run background tasks. Pass the `TestScope` instead.
 

@@ -3,6 +3,7 @@ package com.twocoders.movieapp.data.remote.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/** Response of `tv/{id}?append_to_response=credits`. TV shows use `name`, `first_air_date` and `created_by`. */
 @Serializable
 data class TvShowDetailsDto(
     val id: Int,

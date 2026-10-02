@@ -59,9 +59,28 @@ There's nothing to whitelist. TMDB has no test-user allow list for read-only API
 
 To debug, filter Logcat by `ApiCallHandler` (errors include the HTTP code, path and TMDB `status_code`) or by `okhttp` (debug builds log full bodies, with `Authorization` redacted).
 
+## Offline cache
+
+TMDB responses are cached in Room (`movie_cache.db`), and images in Coil's disk cache (`cacheDir/image_cache`, 100 MB). The full design is in the README under "Offline support".
+
+| Question | Answer |
+|---|---|
+| When is the cache used? | Only when a request fails with `NoConnection`. Online, TMDB is always asked first and the cache is refreshed. |
+| Why does an error show offline although I saw that screen? | Each list page, details screen and search (query + media type) is cached separately. Opening details from search caches those details too. Something never loaded isn't cached. |
+| A server error but no cached data, even though it's cached? | By design. Only connectivity failures fall back to the cache, so 401, 404 and 5xx stay visible. |
+| How long is data kept? | Popular pages and details: until overwritten. Search pages: 7 days, pruned whenever a new search is saved. |
+| How do I clear it? | *Settings → Apps → MovieApp → Storage → Clear cache* clears images. *Clear storage* clears both. With adb: `adb shell pm clear com.twocoders.movieapp`. |
+| How do I inspect it? | Android Studio → *App Inspection → Database Inspector* → `movie_cache.db`. |
+| I changed an entity. What now? | Bump `MovieDatabase.version` and commit the new `app/schemas/.../<version>.json`. The cache rebuilds from scratch (`fallbackToDestructiveMigration`). Nothing is migrated, because it's only a cache. |
+| How do I test offline? | Airplane mode on a device. In unit tests, `TmdbServerRule.goOffline()` stops MockWebServer. Dropping a single response isn't enough, because OkHttp retries on a pooled connection. |
+
+Logcat tags: `NetworkFirst` for cache read and write failures, `ApiCallHandler` for network errors.
+
 ## Code links
 
 - `app/src/main/java/com/twocoders/movieapp/data/remote/`: `TmdbApi`, `AuthInterceptor`, `ApiCallHandler`, `TmdbJson`, `dto/`
 - `app/src/main/java/com/twocoders/movieapp/data/mapper/`: DTO → domain mapping and image URLs
 - `app/src/main/java/com/twocoders/movieapp/di/NetworkModule.kt`: OkHttp and Retrofit setup
+- `app/src/main/java/com/twocoders/movieapp/data/local/`: Room cache (`MovieDatabase`, DAOs, `RoomMediaLocalDataSource`)
+- `app/src/main/java/com/twocoders/movieapp/data/repository/NetworkFirst.kt`: the network-first / cache-fallback rule
 - `app/src/test/java/com/twocoders/movieapp/data/`: MockWebServer contract tests (`TmdbServerRule`)

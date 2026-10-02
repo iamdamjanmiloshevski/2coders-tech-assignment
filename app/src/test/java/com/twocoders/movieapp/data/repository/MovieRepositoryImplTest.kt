@@ -1,6 +1,7 @@
 package com.twocoders.movieapp.data.repository
 
 import com.twocoders.movieapp.data.remote.TmdbServerRule
+import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.model.Genre
 import com.twocoders.movieapp.domain.model.MediaType
@@ -16,7 +17,7 @@ class MovieRepositoryImplTest {
     @get:Rule
     val tmdb = TmdbServerRule()
 
-    private val repository by lazy { MovieRepositoryImpl(tmdb.api, tmdb.apiCallHandler, tmdb.images) }
+    private val repository by lazy { MovieRepositoryImpl(tmdb.api, tmdb.apiCallHandler, tmdb.images, tmdb.local, tmdb.networkFirst) }
 
     @Test
     fun `popular movies are requested by page and mapped to summaries`() = runTest {
@@ -98,5 +99,36 @@ class MovieRepositoryImplTest {
             assertEquals("Narrator", role)
             assertEquals("https://image.test/t/p/w185/en.jpg", profileUrl)
         }
+    }
+
+    @Test
+    fun `popular page is cached and served offline`() = runTest {
+        tmdb.enqueue(body = """{"page":1,"total_pages":3,"results":[{"id":1,"title":"Cached"}]}""")
+        val online = repository.getPopularMovies(page = 1)
+
+        tmdb.goOffline()
+        val offline = repository.getPopularMovies(page = 1)
+
+        assertEquals(online, offline)
+        assertEquals("Cached", (offline as DataResult.Success).data.items.single().title)
+    }
+
+    @Test
+    fun `uncached page offline reports NoConnection`() = runTest {
+        tmdb.goOffline()
+
+        assertEquals(DataResult.Failure(AppError.NoConnection), repository.getPopularMovies(page = 4))
+    }
+
+    @Test
+    fun `movie details are served offline once seen`() = runTest {
+        tmdb.enqueue(body = """{"id":550,"title":"Fight Club","runtime":139}""")
+        repository.getMovieDetails(id = 550)
+
+        tmdb.goOffline()
+        val offline = (repository.getMovieDetails(id = 550) as DataResult.Success).data
+
+        assertEquals("Fight Club", offline.title)
+        assertEquals(139, offline.runtimeMinutes)
     }
 }

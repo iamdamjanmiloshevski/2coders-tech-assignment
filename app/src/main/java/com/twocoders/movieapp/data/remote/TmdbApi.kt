@@ -28,12 +28,14 @@ interface TmdbApi {
     @GET("tv/{id}?append_to_response=credits")
     suspend fun getTvShowDetails(@Path("id") id: Int): Response<TvShowDetailsDto>
 
+    /** [query] must not be blank, since TMDB rejects it. `SearchMediaUseCase` guarantees that. */
     @GET("search/movie")
     suspend fun searchMovies(
         @Query("query") query: String,
         @Query("page") page: Int,
     ): Response<PagedResponseDto<MovieDto>>
 
+    /** Same contract as [searchMovies]. */
     @GET("search/tv")
     suspend fun searchTvShows(
         @Query("query") query: String,

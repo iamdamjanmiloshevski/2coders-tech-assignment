@@ -32,6 +32,7 @@ data class PaginationState<T>(
     /** True when loading finished and nothing came back, e.g. a search with no matches. */
     val isEmpty: Boolean get() = status is PaginationStatus.EndReached && items.isEmpty()
 
+    /** Moves to the loading state for [nextPage]. */
     internal fun onLoadStarted(): PaginationState<T> = copy(
         status = if (nextPage == FIRST_PAGE) PaginationStatus.LoadingFirstPage else PaginationStatus.LoadingNextPage,
     )
@@ -47,6 +48,7 @@ data class PaginationState<T>(
         status = if (page.hasNextPage) PaginationStatus.Idle else PaginationStatus.EndReached,
     )
 
+    /** Keeps the items already loaded and records [error]. The same page is retried next. */
     internal fun onLoadFailed(error: AppError): PaginationState<T> = copy(
         status = PaginationStatus.Error(error, isFirstPage = nextPage == FIRST_PAGE),
     )
@@ -56,6 +58,7 @@ data class PaginationState<T>(
     }
 }
 
+/** Where the load operation stands. See the state diagram on [PaginationState]. */
 sealed interface PaginationStatus {
     /** Ready to load the next page when asked. */
     data object Idle : PaginationStatus

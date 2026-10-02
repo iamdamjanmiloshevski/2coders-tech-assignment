@@ -121,13 +121,12 @@ fun SearchContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
-            val emptyStateModifier = Modifier.padding(bottom = padding.calculateBottomPadding())
             when (val results = state.results) {
                 SearchResults.Idle -> EmptyState(
                     icon = rememberVectorPainter(Icons.Filled.Search),
                     title = stringResource(R.string.search_idle_title),
                     message = stringResource(R.string.search_idle_message),
-                    modifier = emptyStateModifier,
+                    modifier = Modifier.padding(bottom = padding.calculateBottomPadding()),
                 )
 
                 is SearchResults.Content -> PaginatedMediaList(
@@ -144,7 +143,6 @@ fun SearchContent(
                             icon = painterResource(R.drawable.ic_movie),
                             title = stringResource(R.string.search_empty_title),
                             message = stringResource(R.string.search_empty_message, state.query.trim()),
-                            modifier = emptyStateModifier,
                         )
                     },
                 )

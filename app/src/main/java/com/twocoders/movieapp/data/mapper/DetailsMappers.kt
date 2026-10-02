@@ -19,6 +19,7 @@ private const val JOB_DIRECTOR = "Director"
 private const val DEPARTMENT_WRITING = "Writing"
 private const val ROLE_CREATOR = "Creator"
 
+/** Maps a movie details response, normalising TMDB's "unknown" values (blank tagline, zero budget, runtime or revenue) to null. */
 internal fun MovieDetailsDto.toDomain(images: ImageUrlBuilder) = MovieDetails(
     id = id,
     title = title,
@@ -41,6 +42,7 @@ internal fun MovieDetailsDto.toDomain(images: ImageUrlBuilder) = MovieDetails(
     revenue = revenue.takeIf { it > 0 },
 )
 
+/** Maps a TV show details response. The show's creators fill [Credits.directors]. */
 internal fun TvShowDetailsDto.toDomain(images: ImageUrlBuilder) = TvShowDetails(
     id = id,
     title = name,

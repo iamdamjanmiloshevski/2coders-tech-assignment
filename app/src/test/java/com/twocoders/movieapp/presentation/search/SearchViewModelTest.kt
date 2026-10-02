@@ -1,8 +1,10 @@
 package com.twocoders.movieapp.presentation.search
 
+import com.twocoders.movieapp.domain.error.AppError
 import com.twocoders.movieapp.domain.error.DataResult
 import com.twocoders.movieapp.domain.model.MediaType
 import com.twocoders.movieapp.domain.usecase.SearchMediaUseCase
+import com.twocoders.movieapp.fakes.FakeConnectivityObserver
 import com.twocoders.movieapp.fakes.FakeSearchRepository
 import com.twocoders.movieapp.fakes.FakeSearchRepository.Request
 import com.twocoders.movieapp.fakes.TestData
@@ -25,7 +27,8 @@ class SearchViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository = FakeSearchRepository()
-    private val viewModel by lazy { SearchViewModel(SearchMediaUseCase(repository)) }
+    private val connectivity = FakeConnectivityObserver()
+    private val viewModel by lazy { SearchViewModel(SearchMediaUseCase(repository), connectivity) }
 
     private val SearchViewModel.content: SearchResults.Content
         get() = state.value.results as SearchResults.Content
@@ -112,5 +115,20 @@ class SearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(1, 2), repository.requests.map { it.page })
+    }
+
+    @Test
+    fun `a search that failed offline runs again on reconnect`() = runTest {
+        connectivity.isOnline.value = false
+        repository.result = { DataResult.Failure(AppError.NoConnection) }
+        viewModel.onQueryChange("dune")
+        advanceUntilIdle()
+
+        repository.result = { request -> DataResult.Success(TestData.page(request.page, totalPages = 1, ids = 1..1)) }
+        connectivity.isOnline.value = true
+        advanceUntilIdle()
+
+        assertEquals(2, repository.requests.size)
+        assertEquals(1, viewModel.content.pagination.items.size)
     }
 }

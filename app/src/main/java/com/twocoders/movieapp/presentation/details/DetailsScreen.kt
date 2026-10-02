@@ -93,6 +93,7 @@ private val PosterOverlap = 72.dp
 
 private val TopBarHeight = 64.dp
 
+/** Details of one movie or TV show. Collects [viewModel] state and renders [DetailsContent]. */
 @Composable
 fun DetailsScreen(
     viewModel: DetailsViewModel,

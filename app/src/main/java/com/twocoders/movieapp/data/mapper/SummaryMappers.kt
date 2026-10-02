@@ -13,6 +13,7 @@ import com.twocoders.movieapp.domain.model.Page
  */
 internal const val TMDB_MAX_PAGE = 500
 
+/** Maps a TMDB page envelope to a domain [Page], clamping `total_pages` to [TMDB_MAX_PAGE]. */
 internal fun <T, R> PagedResponseDto<T>.toPage(mapItem: (T) -> R): Page<R> = Page(
     items = results.map(mapItem),
     page = page,

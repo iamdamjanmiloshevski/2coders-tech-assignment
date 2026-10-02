@@ -15,6 +15,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
+/** The TMDB HTTP stack: JSON config, OkHttp with auth and logging, Retrofit, and [ApiCallHandler]. */
 val networkModule = module {
     single<Json> { TmdbJson }
 
