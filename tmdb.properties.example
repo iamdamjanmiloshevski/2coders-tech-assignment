@@ -1,0 +1,4 @@
+# Copy this file to tmdb.properties (gitignored) and fill in your TMDB credentials.
+# Both values are on https://www.themoviedb.org/settings/api
+api.key=YOUR_TMDB_API_KEY
+api.read.access.token=YOUR_TMDB_READ_ACCESS_TOKEN
